@@ -12,4 +12,10 @@ storage_root_map:
   preservation_catalog_prod_a:
     fixture_sr1: 'spec/fixtures/storage_root01'
     fixture_sr2: 'spec/fixtures/storage_root02'
+archive_endpoint_map:
+  default:
+    mock_archive1:
+      endpoint_node: 'localhost'
+      storage_location: 'bucket_name'
+      access_key: 'totallysecret'
 workflow_services_url: 'https://sul-lyberservices-test.stanford.edu/workflow/'

@@ -4,6 +4,8 @@
 endpoint_types:
   online_nfs:
     endpoint_class: online
+  archive_s3:
+    endpoint_class: archive
 
 endpoints:
   # the defaults used when seeding the endpoints that correspond to local storage roots
@@ -12,6 +14,9 @@ endpoints:
     endpoint_type_name: 'online_nfs'
     endpoint_node: 'localhost'
     recovery_cost: 1
+  archive_defaults:
+    endpoint_type_name: 'archive_s3'
+    recovery_cost: 10
 
 moab:
   # storage_trunk is the name of the directory under a storage_root which contains

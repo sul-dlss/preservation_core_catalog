@@ -42,8 +42,26 @@ class Endpoint < ApplicationRecord
     end
   end
 
+  def self.seed_archive_endpoints_from_config(endpoint_type, preservation_policies)
+    HostSettings.archive_endpoints.map do |endpoint_name, endpoint_config|
+      find_or_create_by!(endpoint_name: endpoint_name.to_s) do |endpoint|
+        endpoint.endpoint_type = endpoint_type
+        endpoint.endpoint_node = endpoint_config.endpoint_node
+        endpoint.storage_location = endpoint_config.storage_location
+        endpoint.recovery_cost = Settings.endpoints.archive_defaults.recovery_cost
+        endpoint.preservation_policies = preservation_policies
+      end
+    end
+  end
+
+  # TODO: move to EndpointType class?  e.g. .default_for_storage_root
   def self.default_storage_root_endpoint_type
     EndpointType.find_by!(type_name: Settings.endpoints.storage_root_defaults.endpoint_type_name)
+  end
+
+  # TODO: move to EndpointType class?  e.g. .default_for_archive
+  def self.default_archive_endpoint_type
+    EndpointType.find_by!(type_name: Settings.endpoints.archive_defaults.endpoint_type_name)
   end
 
   def to_h
