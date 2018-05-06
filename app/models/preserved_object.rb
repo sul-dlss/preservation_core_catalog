@@ -9,4 +9,15 @@ class PreservedObject < ApplicationRecord
   validates :druid, presence: true, uniqueness: true, format: { with: DruidTools::Druid.pattern }
   validates :current_version, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :preservation_policy, null: false
+
+  def create_archive_copies(version)
+    # TODO: is it worth checking that the given version is btwn 0 and #current_version ?
+    # TODO: wrap in transaction
+    Endpoint.target_endpoints(druid).archive.each do |ep|
+      PreservedCopy.find_or_create_by!(preserved_object: self, version: version, endpoint: ep) do |pc|
+        pc.status = PreservedCopy::UNREPLICATED_STATUS
+        # TODO: does size get set later, after zip is created?
+      end
+    end
+  end
 end
