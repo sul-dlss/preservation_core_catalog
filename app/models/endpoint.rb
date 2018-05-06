@@ -12,6 +12,18 @@ class Endpoint < ApplicationRecord
   validates :storage_location, presence: true
   validates :recovery_cost, presence: true
 
+  # for the given druid, what endpoints should have preserved copies?
+  # note: must be combined with other scopes and filters to determine, e.g.,
+  # which archive endpoints are lacking a preserved copy for a given version.
+  scope :target_endpoints, lambda { |druid|
+    joins(preservation_policies: [:preserved_objects]).where(preserved_objects: {druid: druid})
+  }
+
+  scope :archive, lambda {
+    # TODO: maybe endpoint_class should be an enum or a constant?
+    joins(:endpoint_type).where(endpoint_types: { endpoint_class: 'archive' })
+  }
+
   # iterates over the storage roots enumerated in settings, creating an endpoint for each if one doesn't
   # already exist.
   # returns an array with the result of the ActiveRecord find_or_create_by! call for each settings entry (i.e.,

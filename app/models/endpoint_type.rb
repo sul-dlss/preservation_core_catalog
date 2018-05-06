@@ -4,6 +4,7 @@ class EndpointType < ApplicationRecord
   has_many :endpoints, dependent: :restrict_with_exception
 
   validates :type_name, presence: true, uniqueness: true
+  # TODO: maybe endpoint_class should be an enum or a constant?
   validates :endpoint_class, presence: true
 
   # iterates over the endpoint types enumerated in the settings, creating any that don't already exist.
