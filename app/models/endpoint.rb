@@ -19,6 +19,57 @@ class Endpoint < ApplicationRecord
     joins(preservation_policies: [:preserved_objects]).where(preserved_objects: {druid: druid})
   }
 
+  scope :in_need_of_archive_copy_1, lambda { |druid, version|
+    # Cast version to int for nicer errors in the case of bad input.  But ActiveRecord/ARel will still protect
+    # against injection attacks even without using a bind var (e.g. a string passed in for an int col query will
+    # silently be turned into zero).
+    endpoint_has_pres_copy_subquery =
+      PreservedCopy.where(
+        PreservedCopy.arel_table[:endpoint_id].eq(Endpoint.arel_table[:id])
+          .and(PreservedCopy.arel_table[:version].eq(version.to_i))
+      ).exists
+
+    target_endpoints(druid).archive.where.not(endpoint_has_pres_copy_subquery)
+  }
+
+  # similar to _1, but explain plan seems to show it as slightly more expensive
+  scope :in_need_of_archive_copy_2, lambda { |druid, version|
+    # Cast version to int for nicer errors in the case of bad input.  But ActiveRecord/ARel will still protect
+    # against injection attacks even without using a bind var (e.g. a string passed in for an int col query will
+    # silently be turned into zero).
+    endpoints_with_pres_copy_subquery =
+      PreservedCopy
+        .where(
+          PreservedCopy.arel_table[:endpoint_id].eq(Endpoint.arel_table[:id])
+            .and(PreservedCopy.arel_table[:version].eq(version.to_i))
+        )
+        .select(:endpoint_id)
+
+    target_endpoints(druid).archive.where.not(id: endpoints_with_pres_copy_subquery)
+  }
+
+  # similar in style to _4, but explain plan shows the lower cost bound to be almost equal to the upper bound, whereas _4 has a much lower lower bound
+  scope :in_need_of_archive_copy_3, lambda { |druid, version|
+    target_endpoints(druid).archive
+      .joins("LEFT OUTER JOIN preserved_copies ON preserved_copies.endpoint_id = endpoints.id AND preserved_copies.version = #{version.to_i}")
+      .group(Endpoint.arel_table[:id], PreservedObject.arel_table[:id], PreservedCopy.arel_table[:version])
+      .having('count(preserved_copies.id) = 0')
+  }
+
+  # came up with literally exactly the same plan as _1 when i ran it on my laptop
+  scope :in_need_of_archive_copy_4a, lambda { |druid, version|
+    target_endpoints(druid).archive
+      .joins("LEFT OUTER JOIN preserved_copies ON preserved_copies.endpoint_id = endpoints.id AND preserved_copies.version = #{version.to_i}")
+      .where(preserved_copies: {endpoint_id: nil})
+  }
+
+  # came up with almost exactly the same plan as _1 when i ran it on my laptop (this one was slightly better)
+  scope :in_need_of_archive_copy_4b, lambda { |druid, version|
+    target_endpoints(druid).archive
+      .joins("LEFT OUTER JOIN preserved_copies ON preserved_copies.endpoint_id = endpoints.id AND preserved_copies.version = #{version.to_i}")
+      .where(preserved_copies: {id: nil})
+  }
+
   scope :archive, lambda {
     # TODO: maybe endpoint_class should be an enum or a constant?
     joins(:endpoint_type).where(endpoint_types: { endpoint_class: 'archive' })
