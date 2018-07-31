@@ -1,0 +1,15 @@
+@prefix dlss-pres: <http://library.stanford.edu/dlss/ns/pres/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://library.stanford.edu/moab/e52d82a6-940e-11e8-8fe3-80e65027c76c> a dlss-pres:Moab ;
+    dlss-pres:MoabStorageRoot [ rdf:value "preservation-catalog-prod-02.stanford.edu" ] ;
+    dlss-pres:preserved_object <http://library.stanford.edu/preserved_obj/8c248116-9411-11e8-8fe3-80e65027c76c> ;
+    schema:dateModified "2018-07-30T16:01:50.453766"^^xsd:dateTime ;
+    schema:startDate "2018-07-30T16:01:50.453766"^^xsd:dateTime .
+
+<http://library.stanford.edu/preserved_obj/8c248116-9411-11e8-8fe3-80e65027c76c> a dlss-pres:PreservedObject .
+
