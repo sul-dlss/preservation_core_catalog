@@ -103,7 +103,6 @@ describe PreservationCatalog::S3 do
       let(:dvz) { DruidVersionZip.new('bj102hs9687', 2) }
       let(:dvz_part) { DruidVersionZipPart.new(dvz, dvz.s3_key('.zip')) }
       let(:digest) { dvz_part.base64digest }
-      let(:file) { File.open(dvz_part.file) }
       let(:now) { Time.zone.now.iso8601 }
       let(:get_response) { s3_object.get }
 
@@ -113,7 +112,7 @@ describe PreservationCatalog::S3 do
 
       it 'accepts/returns File body and arbitrary metadata' do
         resp = nil
-        expect { s3_object.upload_file(file, metadata: { our_time: now }) }.not_to raise_error
+        expect { s3_object.upload_file(dvz_part.file_path, metadata: { our_time: now }) }.not_to raise_error
         expect { resp = s3_object.get }.not_to raise_error
         expect(resp).to be_a(Aws::S3::Types::GetObjectOutput)
         expect(resp.metadata.symbolize_keys).to eq(our_time: now)

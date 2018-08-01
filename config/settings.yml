@@ -20,7 +20,7 @@ preservation_policies:
   policy_definitions:
     default:
       archive_ttl: 604_800 # _ttl values are in seconds. 604,800 s == one week.
-      fixity_ttl: 604_800
+      fixity_ttl: 7_776_000 # 7,776,000 s == 90 days.
 
 provlog:
   enable: false

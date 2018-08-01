@@ -18,13 +18,11 @@ describe ResultsRecorderJob, type: :job do
       expect(zmv.reload).to be_ok
     end
     it 'sets part status to ok' do
-      skip 'write test for individual part status'
-    end
-  end
-
-  context 'when some parts for zip_endpoint are replicated' do
-    it 'does not set parent zipped_moab_version status to ok' do
-      skip 'write test for parent zmv status'
+      expect {
+        described_class.perform_now(druid, zmv.version, 'fake.zip', zip_endpoint.delivery_class.to_s)
+      }.to change {
+        zmv.zip_parts.first.status
+      }.from("unreplicated").to("ok")
     end
   end
 

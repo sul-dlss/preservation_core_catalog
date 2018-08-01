@@ -15,6 +15,7 @@ describe ChecksumValidationJob, type: :job do
   end
 
   describe 'before_enqueue' do
+    before { allow(ChecksumValidationJob).to receive(:perform_later).and_call_original } # undo rails_helper block
     it 'raises on bad param' do
       expect { described_class.perform_later(3) }.to raise_error(ArgumentError)
       expect { described_class.perform_later }.to raise_error(ArgumentError)

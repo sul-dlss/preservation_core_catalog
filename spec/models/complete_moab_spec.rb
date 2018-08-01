@@ -278,10 +278,10 @@ RSpec.describe CompleteMoab, type: :model do
     describe '.fixity_check_expired' do
       let(:ms_root2) { MoabStorageRoot.find_by(name: 'fixture_sr2') }
       let!(:checked_before_threshold_cm1) do
-        create(:complete_moab, args.merge(version: 6, last_checksum_validation: now - 3.weeks))
+        create(:complete_moab, args.merge(version: 6, last_checksum_validation: now - 56.weeks))
       end
       let!(:checked_before_threshold_cm2) do
-        my_args = args.merge(version: 7, last_checksum_validation: now - 7.01.days, moab_storage_root: ms_root2)
+        my_args = args.merge(version: 7, last_checksum_validation: now - 90.01.days, moab_storage_root: ms_root2)
         create(:complete_moab, my_args)
       end
       let!(:recently_checked_cm1) do
@@ -378,6 +378,21 @@ RSpec.describe CompleteMoab, type: :model do
       cm.version = 55
       expect(cm).to receive(:create_zipped_moab_versions!)
       cm.save!
+    end
+  end
+
+  describe '.after_save callback' do
+    before { allow(ChecksumValidationJob).to receive(:perform_later).and_call_original } # undo rails_helper block
+    it 'does not call validate_checksums when status is unchanged' do
+      cm.size = 234
+      expect(cm).not_to receive(:validate_checksums!)
+      cm.save!
+    end
+
+    it 'does calls validate_checksums when status is validity_unknown' do
+      cm.ok! # object starts out with validity_unknown status
+      expect(cm).to receive(:validate_checksums!)
+      cm.validity_unknown!
     end
   end
 end

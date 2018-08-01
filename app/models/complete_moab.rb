@@ -17,6 +17,7 @@ class CompleteMoab < ApplicationRecord
 
   after_create :create_zipped_moab_versions!
   after_update :create_zipped_moab_versions!, if: :saved_change_to_version? # an ActiveRecord dynamic method
+  after_save :validate_checksums!, if: proc { |cm| cm.saved_change_to_status? && cm.validity_unknown? }
 
   belongs_to :preserved_object, inverse_of: :complete_moabs
   belongs_to :moab_storage_root, inverse_of: :complete_moabs

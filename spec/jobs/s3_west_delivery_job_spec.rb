@@ -35,7 +35,7 @@ describe S3WestDeliveryJob, type: :job do
   context 'zip part is new to S3' do
     it 'uploads_file to S3' do
       expect(object).to receive(:upload_file).with(
-        File, metadata: a_hash_including(checksum_md5: md5)
+        dvz_part.file_path, metadata: a_hash_including(checksum_md5: md5)
       )
       described_class.perform_now(druid, version, part_s3_key, metadata)
     end

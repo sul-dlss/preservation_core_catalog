@@ -29,6 +29,26 @@ RSpec.describe ZipPart, type: :model do
     end
   end
 
+  describe "#all_parts_replicated?" do
+    let(:zp) { described_class.new(args) }
+
+    it "returns false if status is 'unreplicated'" do
+      expect(zp.all_parts_replicated?).to be false
+    end
+    it "returns true if status is 'ok'" do
+      zp.ok!
+      expect(zp.all_parts_replicated?).to be true
+    end
+  end
+
+  describe "#suffixes_in_set" do
+    let(:zp) { described_class.new(args.merge(parts_count: 3)) }
+
+    it 'returns suffixes of all parts' do
+      expect(zp.suffixes_in_set).to eq [".zip", ".z01", ".z02"]
+    end
+  end
+
   it { is_expected.to validate_presence_of(:create_info) }
   it { is_expected.to validate_presence_of(:md5) }
   it { is_expected.to validate_presence_of(:parts_count) }

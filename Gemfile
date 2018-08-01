@@ -29,10 +29,6 @@ gem 'whenever' # manage cron for audit checks
 gem 'moab-versioning' # work with Moab Objects
 gem 'druid-tools' # for druid validation and druid-tree parsing
 
-group :production do
-  gem 'newrelic_rpm' # for production performance modeling
-end
-
 group :development, :test do
   gem 'rspec-rails', '~> 3.6'
   gem 'rails-controller-testing'

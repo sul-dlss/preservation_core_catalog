@@ -107,7 +107,7 @@ class DruidVersionZip
   # @see #work_dir
   # @return [String] shell command to create this zip
   def zip_command
-    "zip -vr0X -sv -s #{zip_split_size} #{file_path} #{druid.id}/#{v_version}"
+    "zip -r0X -s #{zip_split_size} #{file_path} #{druid.id}/#{v_version}"
   end
 
   # We presume the system guts do not change underneath a given class instance.

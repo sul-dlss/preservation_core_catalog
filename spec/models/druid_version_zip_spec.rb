@@ -47,7 +47,7 @@ describe DruidVersionZip do
       before { allow(dvz).to receive(:zip_command).and_return(zip_command) }
 
       context 'when inpath is incorrect' do
-        let(:zip_command) { "zip -vr0X -sv -s 10g #{zip_path} /wrong/path" }
+        let(:zip_command) { "zip -r0X -s 10g #{zip_path} /wrong/path" }
 
         it 'raises error' do
           expect { dvz.create_zip! }.to raise_error(RuntimeError, %r{zipmaker failure.*/wrong/path}m)
@@ -63,7 +63,7 @@ describe DruidVersionZip do
       end
 
       context 'if the utility "moved"' do
-        let(:zip_command) { "zap -vr0X -sv -s 10g #{zip_path} #{druid}/v0003" }
+        let(:zip_command) { "zap -r0X -s 10g #{zip_path} #{druid}/v0003" }
 
         it 'raises error' do
           expect { dvz.create_zip! }.to raise_error(Errno::ENOENT, /No such file/)
@@ -152,7 +152,7 @@ describe DruidVersionZip do
     let(:zip_path) { '/tmp/bj/102/hs/9687/bj102hs9687.v0001.zip' }
 
     it 'returns zip string to execute for this druid/version' do
-      expect(dvz.zip_command).to eq "zip -vr0X -sv -s 10g #{zip_path} bj102hs9687/v0001"
+      expect(dvz.zip_command).to eq "zip -r0X -s 10g #{zip_path} bj102hs9687/v0001"
     end
   end
 
