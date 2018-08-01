@@ -5,11 +5,67 @@
 @prefix xml: <http://www.w3.org/XML/1998/namespace> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-<http://library.stanford.edu/moab/e52d82a6-940e-11e8-8fe3-80e65027c76c> a dlss-pres:Moab ;
-    dlss-pres:MoabStorageRoot [ rdf:value "preservation-catalog-prod-02.stanford.edu" ] ;
-    dlss-pres:preserved_object <http://library.stanford.edu/preserved_obj/8c248116-9411-11e8-8fe3-80e65027c76c> ;
-    schema:dateModified "2018-07-30T16:01:50.453766"^^xsd:dateTime ;
-    schema:startDate "2018-07-30T16:01:50.453766"^^xsd:dateTime .
+<http://library.stanford.edu/ddce66a2-95c5-11e8-847e-80e65027c76c> a dlss-pres:ZipEndpoint ;
+    dlss-pres:delivery_class "S3WestDeliveryJob" ;
+    dlss-pres:endpoint_name "aws_s3_west_2" ;
+    dlss-pres:endpoint_node "us-west-2" ;
+    dlss-pres:storage_location "sul-sdr-aws-us-west-2-test" ;
+    schema:dateCreated "2018-07-02 22:15:57 UTC"^^xsd:dateTime ;
+    schema:dateModified "2018-07-02 22:15:57 UTC"^^xsd:dateTime .
 
-<http://library.stanford.edu/preserved_obj/8c248116-9411-11e8-8fe3-80e65027c76c> a dlss-pres:PreservedObject .
+<http://library.stanford.edu/f82b8192-95e3-11e8-847e-80e65027c76c> a dlss-pres:ZipPart ;
+    dlss-pres:create_info "" ;
+    dlss-pres:md5 "2a9acaf50c950414c4b347d5ba84f9b6" ;
+    dlss-pres:parts_count "{:zip_cmd=>zip -vr0X -sv -s 10g /sdr-transfers/vc/441/wg/5027/vc441wg5027.v0004.zip vc441wg5027/v0004 :zip_version=>Zip 3.0 (July 5th 2008)}" ;
+    dlss-pres:size "56958" ;
+    dlss-pres:status ".zip" ;
+    dlss-pres:zipped_moab_version <http://library.stanford.edu/0fb5433c-95dc-11e8-847e-80e65027c76c> ;
+    schema:dateCreated "2018-07-14 01:13:29 UTC"^^xsd:dateTime ;
+    schema:dateModified "2018-07-16 20:37:36 UTC"^^xsd:dateTime .
+
+<http://library.stanford.edu/0fb5433c-95dc-11e8-847e-80e65027c76c> a dlss-pres:ZippedMoabVersion ;
+    dlss-pres:complete_moab <http://library.stanford.edu/d7884eb8-95d7-11e8-847e-80e65027c76c> ;
+    dlss-pres:status "ok" ;
+    dlss-pres:zip_endpoint <http://library.stanford.edu/f3797c0e-95d3-11e8-847e-80e65027c76c> ;
+    schema:dateCreated "2018-08-01 22:03:47 UTC"^^xsd:dateTime ;
+    schema:dateModified "2018-08-01 22:03:47 UTC"^^xsd:dateTime ;
+    schema:version 3 .
+
+<http://library.stanford.edu/a5648068-95d8-11e8-847e-80e65027c76c> a dlss-pres:PreservedObject ;
+    dlss-pres:current_version "1" ;
+    dlss-pres:druid "bb107kv3508" ;
+    dlss-pres:preservation_policy <http://library.stanford.edu/default-preservation-policy> ;
+    schema:dateCreated "2018-06-07 23:36:59 UTC"^^xsd:dateTime ;
+    schema:dateModified "2018-06-07 23:36:59 UTC"^^xsd:dateTime .
+
+<http://library.stanford.edu/d7884eb8-95d7-11e8-847e-80e65027c76c> a dlss-pres:CompleteMoab ;
+    dlss-pres:last_checksum_validation "2018-08-01 16:37:21 UTC"^^xsd:dateTime ;
+    dlss-pres:last_moab_validation "2018-08-01 16:37:21 UTC"^^xsd:dateTime ;
+    dlss-pres:last_version_audit "2018-08-01 21:53:47 UTC"^^xsd:dateTime ;
+    dlss-pres:moab_storage_root <http://library.stanford.edu/dd3cfd2e-95da-11e8-847e-80e65027c76c> ;
+    dlss-pres:preserved_object <http://library.stanford.edu/a5648068-95d8-11e8-847e-80e65027c76c> ;
+    dlss-pres:size "695705169" ;
+    dlss-pres:status "ok" ;
+    schema:dateCreated "2018-06-07 23:36:59 UTC"^^xsd:dateTime ;
+    schema:dateModified "2018-08-01 21:53:47 UTC"^^xsd:dateTime ;
+    schema:version "1" .
+
+<http://library.stanford.edu/dd3cfd2e-95da-11e8-847e-80e65027c76c> a dlss-pres:MoabStorageRoot ;
+    dlss-pres:storage_location "/services-disk11/sdr2objects" ;
+    schema:dateCreated "2018-06-07 23:36:50 UTC"^^xsd:dateTime ;
+    schema:dateModified "2018-06-14 22:35:16 UTC"^^xsd:dateTime ;
+    schema:name "services-disk11" .
+
+<http://library.stanford.edu/default-preservation-policy> a dlss-pres:PreservationPolicy ;
+    dlss-pres:archive_ttl 604800 ;
+    dlss-pres:fixity_ttl 604800 ;
+    schema:name "default"@en .
+
+<http://library.stanford.edu/f3797c0e-95d3-11e8-847e-80e65027c76c> a dlss-pres:ZipEndpoint ;
+    dlss-pres:delivery_class "S3EastDeliveryJob" ;
+    dlss-pres:endpoint_name "aws_s3_east_1" ;
+    dlss-pres:endpoint_node "us-east-1" ;
+    dlss-pres:storage_location "sul-sdr-aws-us-east-1-test" ;
+    schema:dateCreated "2018-07-02 22:15:57 UTC"^^xsd:dateTime ;
+    schema:dateModified "2018-07-02 22:15:57 UTC"^^xsd:dateTime .
 
