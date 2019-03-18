@@ -112,6 +112,7 @@ GEM
     crack (0.4.3)
       safe_yaml (~> 1.0.0)
     crass (1.0.4)
+    date (1.0.0)
     deep_merge (1.2.1)
     deprecation (1.0.0)
       activesupport
@@ -366,6 +367,7 @@ DEPENDENCIES
   capistrano-rails
   config
   coveralls
+  date (~> 1.0.0)
   did_you_mean (~> 1.2.0)
   dlss-capistrano
   dor-workflow-service

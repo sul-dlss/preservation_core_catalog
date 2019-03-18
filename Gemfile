@@ -26,6 +26,7 @@ gem 'ruby-prof' # to profile methods
 gem 'whenever' # manage cron for audit checks
 gem 'did_you_mean', '~> 1.2.0' # debugging deployment
 gem 'fileutils', '~> 1.0.2'
+gem 'date', '~> 1.0.0'
 
 # Stanford gems
 gem 'moab-versioning' # work with Moab Objects
