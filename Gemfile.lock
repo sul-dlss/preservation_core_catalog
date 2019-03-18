@@ -169,6 +169,7 @@ GEM
     faraday (0.15.4)
       multipart-post (>= 1.2, < 3)
     ffi (1.10.0)
+    fileutils (1.0.2)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
     hashdiff (0.3.8)
@@ -370,6 +371,7 @@ DEPENDENCIES
   dor-workflow-service
   druid-tools
   factory_bot_rails (~> 4.0)
+  fileutils (~> 1.0.2)
   hirb
   honeybadger
   jbuilder (~> 2.5)
