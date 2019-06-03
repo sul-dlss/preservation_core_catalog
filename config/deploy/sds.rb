@@ -8,3 +8,8 @@ set :rails_env, 'production'
 set :bundle_without, 'deploy test'
 set :deploy_to, '/opt/app/pres/preservation_catalog'
 set :whenever_roles, [:queue_populator, :cache_cleaner]
+
+set :quobyte_bucket_name, 'archive-quobyte'
+
+append :linked_files, "config/database.yml", "config/resque.yml",
+       "config/resque-pool.yml", "config/resque-pool-quobyte.yml"

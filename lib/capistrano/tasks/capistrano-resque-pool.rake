@@ -9,8 +9,7 @@ namespace :resque do
       on roles(workers) do
         within app_path do
           execute "cd preservation_catalog/current ; bundle exec resque-pool --daemon --environment #{rails_env}"
-          execute "cd preservation_catalog/current ; AWS_PROFILE=us_west_2 AWS_BUCKET_NAME=#{fetch(:west_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{west_config_path} -p #{west_pid_path}"
-          execute "cd preservation_catalog/current ; AWS_PROFILE=us_south AWS_BUCKET_NAME=#{fetch(:south_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{south_config_path} -p #{south_pid_path}"
+          execute "cd preservation_catalog/current ; AWS_PROFILE=us_west_2 AWS_BUCKET_NAME=#{fetch(:quobyte_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{quobyte_config_path} -p #{quobyte_pid_path}"
         end
       end
     end
@@ -27,21 +26,13 @@ namespace :resque do
             execute :rm, pid_path
           end
         end
-        if west_pid_file_exists?
-          pid = capture(:cat, west_pid_path)
+        if quobyte_pid_file_exists?
+          pid = capture(:cat, quobyte_pid_path)
           if test "kill -0 #{pid} > /dev/null 2>&1"
             execute :kill, "-s QUIT #{pid}"
           else
-            info "Process #{pid} from #{west_pid_path} is not running, cleaning up stale PID file"
-            execute :rm, west_pid_path
-          end
-        end
-        if south_pid_file_exists?
-          pid = capture(:cat, south_pid_path)
-          if test "kill -0 #{pid} > /dev/null 2>&1"
-            execute :kill, "-s QUIT #{pid}"
-          else
-            info "Process #{pid} from #{south_pid_path} is not running, cleaning up stale PID file"
+            info "Process #{pid} from #{quobyte_pid_path} is not running, cleaning up stale PID file"
+            execute :rm, quobyte_pid_path
           end
         end
       end
@@ -55,36 +46,24 @@ namespace :resque do
       File.join(app_path, '/config/resque-pool.yml')
     end
 
-    def west_config_path
-      File.join(app_path, '/config/resque-pool-west.yml')
-    end
-
-    def south_config_path
-      File.join(app_path, '/config/resque-pool-south.yml')
+    def quobyte_config_path
+      File.join(app_path, '/config/resque-pool-quobyte.yml')
     end
 
     def pid_path
       File.join(app_path, '/tmp/pids/resque-pool.pid')
     end
 
-    def west_pid_path
-      File.join(app_path, '/tmp/pids/resque-pool-west.pid')
-    end
-
-    def south_pid_path
-      File.join(app_path, '/tmp/pids/resque-pool-south.pid')
+    def quobyte_pid_path
+      File.join(app_path, '/tmp/pids/resque-pool-quobyte.pid')
     end
 
     def pid_file_exists?
       test("[ -f #{pid_path} ]")
     end
 
-    def west_pid_file_exists?
-      test("[ -f #{west_pid_path} ]")
-    end
-
-    def south_pid_file_exists?
-      test("[ -f #{south_pid_path} ]")
+    def quobyte_pid_file_exists?
+      test("[ -f #{quobyte_pid_path} ]")
     end
 
     def workers
