@@ -127,6 +127,13 @@ ORDER BY name asc
 [["storage_root2", 2017-11-18 05:49:54 UTC, 2017-11-18 06:06:50 UTC, "00:16:55.845987", 9122, 0.3132092573e10]]
 ```
 
+#### which disk is a specific druid stored on?
+
+```ruby
+# example AR query
+druid = 'yk449xx2836'
+CompleteMoab.joins(:preserved_object).find_by('preserved_objects.druid = ?',druid).moab_storage_root
+```
 #### how many moabs on each storage root are `status != 'ok'`?
 ```ruby
 # example AR query
