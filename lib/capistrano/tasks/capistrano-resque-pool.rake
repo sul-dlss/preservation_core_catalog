@@ -6,6 +6,17 @@ namespace :resque do
       fetch(:resque_rails_env) || fetch(:rails_env) || fetch(:stage)
     end
 
+    desc 'Hot swap workers and queues'
+    task :hot_swap do
+      on roles(workers) do
+        within app_path do
+          execute "cd preservation_catalog/current ; bundle exec resque-pool --hot-swap --lock #{lock_path} --daemon --environment #{rails_env}"
+          execute "cd preservation_catalog/current ; AWS_PROFILE=us_west_2 AWS_BUCKET_NAME=#{fetch(:west_bucket_name)} bundle exec resque-pool -H -l #{west_lock_path} -d -E #{rails_env} -c #{west_config_path} -p #{west_pid_path}"
+          execute "cd preservation_catalog/current ; AWS_PROFILE=us_south AWS_BUCKET_NAME=#{fetch(:south_bucket_name)} bundle exec resque-pool -H -l #{south_lock_path} -d -E #{rails_env} -c #{south_config_path} -p #{south_pid_path}"
+        end
+      end
+    end
+
     desc 'Start all the workers and queues'
     task :start do
       on roles(workers) do
@@ -52,6 +63,18 @@ namespace :resque do
 
     def app_path
       File.join(fetch(:deploy_to), 'current')
+    end
+
+    def lock_path
+      File.join(app_path, '/tmp/resque-pool.lock')
+    end
+
+    def west_lock_path
+      File.join(app_path, '/tmp/resque-pool-west.lock')
+    end
+
+    def south_lock_path
+      File.join(app_path, '/tmp/resque-pool-south.lock')
     end
 
     def config_path
