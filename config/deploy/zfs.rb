@@ -7,3 +7,4 @@ set :rails_env, 'production'
 set :bundle_without, 'deploy test'
 set :deploy_to, '/opt/app/pres/preservation_catalog'
 append :linked_files, "config/newrelic.yml", "config/resque.yml"
+set :rvm_custom_path, '/usr/local/rvm'
