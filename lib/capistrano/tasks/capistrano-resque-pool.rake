@@ -10,7 +10,7 @@ namespace :resque do
     task :start do
       on roles(workers) do
         within app_path do
-          execute "cd preservation_catalog/current ; bundle exec resque-pool --daemon --environment #{rails_env}"
+          execute "cd preservation_catalog/current ; BUNDLE_GEMFILE='/opt/app/pres/preservation_catalog/current/Gemfile' /usr/local/rvm/gems/ruby-2.5.3/bin/bundle exec resque-pool --daemon --environment #{rails_env}"
           # execute "cd preservation_catalog/current ; AWS_PROFILE=us_west_2 AWS_BUCKET_NAME=#{fetch(:west_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{west_config_path} -p #{west_pid_path}"
           # execute "cd preservation_catalog/current ; AWS_PROFILE=us_east_1 AWS_BUCKET_NAME=#{fetch(:east_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{east_config_path} -p #{east_pid_path}"
           # execute "cd preservation_catalog/current ; AWS_PROFILE=us_south AWS_BUCKET_NAME=#{fetch(:south_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{south_config_path} -p #{south_pid_path}"
