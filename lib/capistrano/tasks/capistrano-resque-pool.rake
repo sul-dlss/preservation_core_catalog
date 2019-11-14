@@ -11,9 +11,9 @@ namespace :resque do
       on roles(workers) do
         within app_path do
           execute "cd preservation_catalog/current ; BUNDLE_GEMFILE='/opt/app/pres/preservation_catalog/current/Gemfile' /usr/local/rvm/gems/ruby-2.5.3/bin/bundle exec resque-pool --daemon --environment #{rails_env}"
-          # execute "cd preservation_catalog/current ; AWS_PROFILE=us_west_2 AWS_BUCKET_NAME=#{fetch(:west_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{west_config_path} -p #{west_pid_path}"
-          # execute "cd preservation_catalog/current ; AWS_PROFILE=us_east_1 AWS_BUCKET_NAME=#{fetch(:east_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{east_config_path} -p #{east_pid_path}"
-          # execute "cd preservation_catalog/current ; AWS_PROFILE=us_south AWS_BUCKET_NAME=#{fetch(:south_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{south_config_path} -p #{south_pid_path}"
+          execute "cd preservation_catalog/current ; AWS_PROFILE=us_west_2 AWS_BUCKET_NAME=#{fetch(:west_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{west_config_path} -p #{west_pid_path}"
+          execute "cd preservation_catalog/current ; AWS_PROFILE=us_east_1 AWS_BUCKET_NAME=#{fetch(:east_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{east_config_path} -p #{east_pid_path}"
+          execute "cd preservation_catalog/current ; AWS_PROFILE=us_south AWS_BUCKET_NAME=#{fetch(:south_bucket_name)} bundle exec resque-pool -d -E #{rails_env} -c #{south_config_path} -p #{south_pid_path}"
         end
       end
     end
@@ -30,33 +30,33 @@ namespace :resque do
             execute :rm, pid_path
           end
         end
-        # if east_pid_file_exists?
-        #   pid = capture(:cat, east_pid_path)
-        #   if test "kill -0 #{pid} > /dev/null 2>&1"
-        #     execute :kill, "-s QUIT #{pid}"
-        #   else
-        #     info "Process #{pid} from #{east_pid_path} is not running, cleaning up stale PID file"
-        #     execute :rm, east_pid_path
-        #   end
-        # end
-        # if west_pid_file_exists?
-        #   pid = capture(:cat, west_pid_path)
-        #   if test "kill -0 #{pid} > /dev/null 2>&1"
-        #     execute :kill, "-s QUIT #{pid}"
-        #   else
-        #     info "Process #{pid} from #{west_pid_path} is not running, cleaning up stale PID file"
-        #     execute :rm, west_pid_path
-        #   end
-        # end
-        # if south_pid_file_exists?
-        #   pid = capture(:cat, south_pid_path)
-        #   if test "kill -0 #{pid} > /dev/null 2>&1"
-        #     execute :kill, "-s QUIT #{pid}"
-        #   else
-        #     info "Process #{pid} from #{south_pid_path} is not running, cleaning up stale PID file"
-        #     execute :rm, south_pid_path
-        #   end
-        # end
+        if east_pid_file_exists?
+          pid = capture(:cat, east_pid_path)
+          if test "kill -0 #{pid} > /dev/null 2>&1"
+            execute :kill, "-s QUIT #{pid}"
+          else
+            info "Process #{pid} from #{east_pid_path} is not running, cleaning up stale PID file"
+            execute :rm, east_pid_path
+          end
+        end
+        if west_pid_file_exists?
+          pid = capture(:cat, west_pid_path)
+          if test "kill -0 #{pid} > /dev/null 2>&1"
+            execute :kill, "-s QUIT #{pid}"
+          else
+            info "Process #{pid} from #{west_pid_path} is not running, cleaning up stale PID file"
+            execute :rm, west_pid_path
+          end
+        end
+        if south_pid_file_exists?
+          pid = capture(:cat, south_pid_path)
+          if test "kill -0 #{pid} > /dev/null 2>&1"
+            execute :kill, "-s QUIT #{pid}"
+          else
+            info "Process #{pid} from #{south_pid_path} is not running, cleaning up stale PID file"
+            execute :rm, south_pid_path
+          end
+        end
       end
     end
 
