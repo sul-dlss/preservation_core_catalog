@@ -91,9 +91,6 @@ GEM
     capistrano-rails (1.4.0)
       capistrano (~> 3.1)
       capistrano-bundler (~> 1.1)
-    capistrano-resque-pool (0.2.0)
-      capistrano
-      resque-pool
     capistrano-rvm (0.1.2)
       capistrano (~> 3.0)
       sshkit (~> 1.2)
@@ -364,7 +361,6 @@ DEPENDENCIES
   aws-sdk-s3 (~> 1.17)
   capistrano-passenger
   capistrano-rails
-  capistrano-resque-pool
   capistrano-rvm
   config
   coveralls
