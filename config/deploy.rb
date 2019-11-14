@@ -25,7 +25,7 @@ append :linked_files, "config/database.yml", "config/resque.yml",
        "config/resque-pool-west.yml", "config/resque-pool-south.yml"
 
 # Default value for linked_dirs is []
-append :linked_dirs, "log", "config/settings", "tmp/pids"
+append :linked_dirs, "log", "config/settings", "tmp/pids", '.bundle'
 
 set :honeybadger_env, fetch(:stage)
 set :whenever_identifier, -> { "#{fetch(:application)}_#{fetch(:stage)}" }
