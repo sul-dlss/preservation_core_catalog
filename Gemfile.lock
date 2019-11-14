@@ -359,6 +359,7 @@ PLATFORMS
 
 DEPENDENCIES
   aws-sdk-s3 (~> 1.17)
+  capistrano-bundler
   capistrano-passenger
   capistrano-rails
   capistrano-rvm
