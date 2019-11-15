@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-server 'sul-backup-3.stanford.edu', user: 'pres', roles: %w[app db web resque]
+server 'sul-backup-3.stanford.edu', user: 'pres', roles: %w[app db web resque cache_cleaner]
 
 Capistrano::OneTimeKey.generate_one_time_key!
 set :rails_env, 'production'
