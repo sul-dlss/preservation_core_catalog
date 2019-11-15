@@ -95,6 +95,8 @@ GEM
       capistrano (~> 3.0)
       sshkit (~> 1.2)
     capistrano-shared_configs (0.2.2)
+    capistrano-systemd-multiservice (0.1.0.beta7)
+      capistrano (>= 3.7.0, < 3.12.0)
     chronic (0.10.2)
     coderay (1.1.2)
     concurrent-ruby (1.1.5)
@@ -363,6 +365,7 @@ DEPENDENCIES
   capistrano-passenger
   capistrano-rails
   capistrano-rvm
+  capistrano-systemd-multiservice
   config
   coveralls
   dlss-capistrano

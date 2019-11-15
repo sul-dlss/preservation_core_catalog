@@ -1,0 +1,23 @@
+[Unit]
+Description=Resque pool Server
+Requires=network.target redis-server.service
+
+[Service]
+Environment=SYSTEMD_LOG_LEVEL=debug
+WorkingDirectory=/opt/app/pres/preservation_catalog/current
+User=pres
+Group=pres
+ExecStart=/bin/bash -lc 'bundle exec resque-pool -E production >> /var/log/preservation_catalog/resque-pool.stdout.log'
+ExecStartPre=/bin/bash -lc 'AWS_PROFILE=us_east_1 AWS_BUCKET_NAME=sul-sdr-aws-us-east-1-test bundle exec resque-pool -d -E production -c /opt/app/pres/preservation_catalog/current/config/resque-pool-east.yml -p /opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool-east.pid'
+ExecStartPre=/bin/bash -lc 'AWS_PROFILE=us_west_2 AWS_BUCKET_NAME=sul-sdr-aws-us-west-2-test bundle exec resque-pool -d -E production -c /opt/app/pres/preservation_catalog/current/config/resque-pool-west.yml -p /opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool-west.pid'
+ExecStartPre=/bin/bash -lc 'AWS_PROFILE=us_south AWS_BUCKET_NAME=sul-sdr-ibm-us-south-1-test bundle exec resque-pool -d -E production -c /opt/app/pres/preservation_catalog/current/config/resque-pool-south.yml -p /opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool-south.pid'
+PIDFile=/opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool.pid
+RuntimeDirectory=resque-pool
+RuntimeDirectoryMode=2755
+ExecStopPre=/bin/bash -lc 'pid=`cat /opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool.pid`; kill -s QUIT $pid'
+ExecStopPre=/bin/bash -lc 'pid=`cat /opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool-east.pid`; kill -s QUIT $pid'
+ExecStopPre=/bin/bash -lc 'pid=`cat /opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool-west.pid`; kill -s QUIT $pid'
+ExecStopPre=/bin/bash -lc 'pid=`cat /opt/app/pres/preservation_catalog/current/tmp/pids/resque-pool-south.pid`; kill -s QUIT $pid'
+
+[Install]
+WantedBy=multi-user.target

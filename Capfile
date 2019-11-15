@@ -19,3 +19,5 @@ require 'capistrano/rvm'
 # Load custom tasks from `lib/capistrano/tasks` if you have any defined
 Dir.glob("lib/capistrano/tasks/*.rake").each { |r| import r }
 # require 'capistrano-resque-pool'
+require "capistrano/systemd/multiservice"
+install_plugin Capistrano::Systemd::MultiService.new_service('resque-pool')

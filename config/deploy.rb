@@ -46,8 +46,10 @@ before 'deploy:migrate', 'shared_configs:update'
 
 after 'deploy:migrate', 'db_seed'
 
-before 'deploy:starting', 'resque:pool:stop'
-after 'deploy:restart', 'resque:pool:start'
+# before 'deploy:starting', 'resque:pool:stop'
+# after 'deploy:restart', 'resque:pool:start'
+
+after 'deploy:publishing', 'systemd:resque-pool:reload-or-restart'
 
 desc 'Run rake db:seed'
 task :db_seed do
