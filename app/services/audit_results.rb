@@ -22,6 +22,7 @@ class AuditResults
   DB_UPDATE_FAILED = :db_update_failed
   DB_OBJ_ALREADY_EXISTS = :db_obj_already_exists
   DB_OBJ_DOES_NOT_EXIST = :db_obj_does_not_exist
+  DELETED_OBJECT = :deleted_object
   CM_STATUS_CHANGED = :cm_status_changed
   UNEXPECTED_VERSION = :unexpected_version
   INVALID_MOAB = :invalid_moab
@@ -52,6 +53,7 @@ class AuditResults
     DB_UPDATE_FAILED => "db update failed: %{addl}",
     DB_OBJ_ALREADY_EXISTS => "%{addl} db object already exists",
     DB_OBJ_DOES_NOT_EXIST => "%{addl} db object does not exist",
+    DELETED_OBJECT => "deleted object from database",
     CM_STATUS_CHANGED => "CompleteMoab status changed from %{old_status} to %{new_status}",
     UNEXPECTED_VERSION => "actual version (%{actual_version}) has unexpected relationship to %{db_obj_name} db version (%{db_obj_version}); ERROR!",
     INVALID_MOAB => "Invalid Moab, validation errors: %{addl}",
@@ -109,14 +111,15 @@ class AuditResults
 
   DB_UPDATED_CODES = [
     CREATED_NEW_OBJECT,
-    CM_STATUS_CHANGED
+    CM_STATUS_CHANGED,
+    DELETED_OBJECT
   ].freeze
 
   def self.logger_severity_level(result_code)
     case result_code
     when DB_OBJ_DOES_NOT_EXIST, ZIP_PARTS_NOT_CREATED, ZIP_PARTS_NOT_ALL_REPLICATED
       Logger::WARN
-    when VERSION_MATCHES, ACTUAL_VERS_GT_DB_OBJ, CREATED_NEW_OBJECT, CM_STATUS_CHANGED, MOAB_CHECKSUM_VALID
+    when VERSION_MATCHES, ACTUAL_VERS_GT_DB_OBJ, CREATED_NEW_OBJECT, CM_STATUS_CHANGED, MOAB_CHECKSUM_VALID, DELETED_OBJECT
       Logger::INFO
     else
       Logger::ERROR
