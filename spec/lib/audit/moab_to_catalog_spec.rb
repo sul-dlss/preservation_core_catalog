@@ -40,7 +40,7 @@ RSpec.describe Audit::MoabToCatalog do
   describe '.check_existence_for_druid' do
     let(:druid) { 'bz514sm9647' }
     let(:results) do
-      [{ db_obj_does_not_exist: "PreservedObject db object does not exist" },
+      [{ db_obj_does_not_exist: "#<ActiveRecord::RecordNotFound: Couldn't find PreservedObject> db object does not exist" },
        { created_new_object: "added object to db as it did not exist" }]
     end
 

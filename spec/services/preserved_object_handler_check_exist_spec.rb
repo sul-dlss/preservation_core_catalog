@@ -4,8 +4,6 @@ require 'rails_helper'
 require 'services/shared_examples_preserved_object_handler'
 
 RSpec.describe PreservedObjectHandler do
-  before { allow(WorkflowReporter).to receive(:report_error) }
-
   let(:druid) { 'ab123cd4567' }
   let(:incoming_version) { 6 }
   let(:incoming_size) { 9876 }
@@ -14,6 +12,8 @@ RSpec.describe PreservedObjectHandler do
   let(:cm) { po.complete_moabs.find_by!(moab_storage_root: ms_root) }
   let(:db_update_failed_prefix) { "db update failed" }
   let(:po_handler) { described_class.new(druid, incoming_version, incoming_size, ms_root) }
+
+  before { allow(WorkflowReporter).to receive(:report_error) }
 
   describe '#check_existence' do
     it_behaves_like 'attributes validated', :check_existence
@@ -394,13 +394,45 @@ RSpec.describe PreservedObjectHandler do
         po_handler.check_existence
         expect(Rails.logger).to have_received(:debug).with("check_existence #{druid} called")
       end
+
+      context 'CompleteMoab path does not match moab on disk' do
+        let(:druid) { 'bj102hs9687' }
+        let(:wrong_ms_root) { MoabStorageRoot.find_by!(storage_location: 'spec/fixtures/storage_root02/sdr2objects') }
+        let(:cm) { po.complete_moabs.find_by!(moab_storage_root: ms_root) }
+        let(:po_handler) { described_class.new(druid, incoming_version, incoming_size, wrong_ms_root) }
+
+        before do
+          allow(WorkflowReporter).to receive(:report_completed)
+          cm.moab_storage_root = wrong_ms_root
+          cm.version = 3
+          cm.save!
+        end
+
+        it 'returns expected results' do
+          results = po_handler.check_existence
+          expect(results).to include(a_hash_including(AuditResults::CM_STATUS_CHANGED =>
+                                                          'CompleteMoab status changed from ok to online_moab_not_found'))
+          expect(results).to include(a_hash_including(AuditResults::MOAB_NOT_FOUND))
+          expect(results).to include(a_hash_including(AuditResults::CM_STORAGE_ROOT_CHANGED))
+          expect(results).to include(a_hash_including(AuditResults::CM_STATUS_CHANGED =>
+                                                          'CompleteMoab status changed from online_moab_not_found to validity_unknown'))
+        end
+
+        it 'changes the storage root' do
+          po_handler.check_existence
+          cm.reload
+          expect(cm.moab_storage_root).to eq ms_root
+        end
+      end
     end
 
     context 'object not in db' do
-      let(:exp_po_not_exist_msg) { "PreservedObject db object does not exist" }
+      let(:exp_po_not_exist_msg) { "#<ActiveRecord::RecordNotFound: Couldn't find PreservedObject> db object does not exist" }
       let(:exp_obj_created_msg) { "added object to db as it did not exist" }
 
       context 'presume validity and test other common behavior' do
+        let(:druid) { 'bp628nk4868' }
+
         before { allow(po_handler).to receive(:moab_validation_errors).and_return([]) }
 
         # FIXME: if requirements change to a single message for "object does not exist" and "created object"

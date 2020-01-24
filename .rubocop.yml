@@ -33,7 +33,6 @@ Layout/SpaceAroundEqualsInParameterDefault:
 
 Metrics/BlockLength:
   Exclude:
-    - 'app/services/preserved_object_handler.rb' # FIXME check_existence shameless green
     - '**/*.rake'
     - 'spec/**/*'
 

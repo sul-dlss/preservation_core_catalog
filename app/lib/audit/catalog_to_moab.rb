@@ -27,18 +27,13 @@ module Audit
       end
 
       unless online_moab_found?
-        transaction_ok = ActiveRecordUtils.with_transaction_and_rescue(results) do
-          update_status('online_moab_not_found')
-          complete_moab.save!
-        end
-        results.remove_db_updated_results unless transaction_ok
+        handle_missing_moab
 
-        results.add_result(AuditResults::MOAB_NOT_FOUND,
-                           db_created_at: complete_moab.created_at.iso8601,
-                           db_updated_at: complete_moab.updated_at.iso8601)
+        # Check if it moved to another location
+        MoabMovedHandler.new(complete_moab, results).check_and_handle_moved_moab
+
         return results.report_results(logger)
       end
-
       return results.report_results(logger) unless can_validate_current_comp_moab_status?
 
       compare_version_and_take_action
@@ -48,11 +43,6 @@ module Audit
 
     def storage_location
       complete_moab.moab_storage_root.storage_location
-    end
-
-    def online_moab_found?
-      return true if moab
-      false
     end
 
     # compare the catalog version to the actual Moab;  update the catalog version if the Moab is newer

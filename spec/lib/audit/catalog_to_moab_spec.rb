@@ -9,6 +9,7 @@ RSpec.describe Audit::CatalogToMoab do
   let(:c2m) { described_class.new(comp_moab) }
   let(:mock_sov) { instance_double(Stanford::StorageObjectValidator) }
   let(:po) { create(:preserved_object_fixture, druid: druid) }
+  let(:ms_root) { MoabStorageRoot.find_by!(storage_location: storage_location) }
   let(:comp_moab) do
     MoabStorageRoot.find_by!(storage_location: storage_location).complete_moabs.find_by!(preserved_object: po)
   end
@@ -48,7 +49,7 @@ RSpec.describe Audit::CatalogToMoab do
     end
 
     it 'gets the current version on disk from the Moab::StorageObject' do
-      moab = instance_double(Moab::StorageObject, object_pathname: object_dir)
+      moab = instance_double(Moab::StorageObject, object_pathname: object_dir, exist?: true)
       allow(Moab::StorageObject).to receive(:new).with(druid, String).and_return(moab)
       expect(moab).to receive(:current_version_id).and_return(3)
       c2m.check_catalog_version
@@ -71,12 +72,18 @@ RSpec.describe Audit::CatalogToMoab do
     end
 
     it 'calls online_moab_found?' do
-      expect(c2m).to receive(:online_moab_found?)
+      expect(c2m).to receive(:online_moab_found?).and_return(true)
       c2m.check_catalog_version
     end
 
-    context 'moab is nil (exists in catalog but not online)' do
-      before { allow(Moab::StorageObject).to receive(:new).with(druid, String).and_return(nil) }
+    context 'moab is nil (exists in catalog but not online at all)' do
+      let(:moab) { instance_double(Moab::StorageObject) }
+
+      before do
+        allow(Moab::StorageObject).to receive(:new).with(druid, String).and_return(nil)
+        allow(Moab::StorageServices).to receive(:find_storage_object).with(druid).and_return(moab)
+        allow(moab).to receive(:exist?).and_return(false)
+      end
 
       it 'adds a MOAB_NOT_FOUND result' do
         c2m.instance_variable_set(:@results, results_double)
@@ -115,6 +122,39 @@ RSpec.describe Audit::CatalogToMoab do
           expect(c2m.results.result_array).not_to include(a_hash_including(AuditResults::CM_STATUS_CHANGED))
           expect(comp_moab.reload.status).not_to eq 'online_moab_not_found'
         end
+      end
+    end
+
+    context 'moab is nil (exists in catalog but online in a different location)' do
+      let(:wrong_ms_root) { MoabStorageRoot.find_by!(storage_location: 'spec/fixtures/storage_root02/sdr2objects') }
+
+      before do
+        comp_moab.ok!
+        comp_moab.moab_storage_root = wrong_ms_root
+        comp_moab.save!
+        c2m.instance_variable_set(:@results, results_double)
+      end
+
+      it 'adds a MOAB_NOT_FOUND and CM_STORAGE_ROOT result' do
+        expect(c2m.results).to receive(:add_result).with(
+          AuditResults::MOAB_NOT_FOUND, db_created_at: anything, db_updated_at: anything
+        )
+        expect(c2m.results).to receive(:add_result).with(
+          AuditResults::CM_STATUS_CHANGED, old_status: "ok", new_status: "online_moab_not_found"
+        )
+        expect(c2m.results).to receive(:add_result).with(
+          AuditResults::CM_STORAGE_ROOT_CHANGED, old_storage_root: 'spec/fixtures/storage_root02/sdr2objects',
+                                                 new_storage_root: 'spec/fixtures/storage_root01/sdr2objects'
+        )
+        expect(c2m.results).to receive(:add_result).with(
+          AuditResults::CM_STATUS_CHANGED, old_status: "online_moab_not_found", new_status: "validity_unknown"
+        )
+        c2m.check_catalog_version
+      end
+
+      it 'changes the storage root' do
+        c2m.check_catalog_version
+        expect(comp_moab.moab_storage_root).to eq ms_root
       end
     end
 
@@ -210,7 +250,7 @@ RSpec.describe Audit::CatalogToMoab do
 
     context 'catalog version < moab version' do
       before do
-        moab = instance_double(Moab::StorageObject, size: 666, object_pathname: object_dir)
+        moab = instance_double(Moab::StorageObject, size: 666, object_pathname: object_dir, exist?: true)
         allow(Moab::StorageObject).to receive(:new).with(druid, instance_of(String)).and_return(moab)
         allow(moab).to receive(:current_version_id).and_return(4)
       end
@@ -302,7 +342,7 @@ RSpec.describe Audit::CatalogToMoab do
 
     context 'catalog version > moab version' do
       before do
-        moab = instance_double(Moab::StorageObject, size: 666, object_pathname: object_dir, current_version_id: 2)
+        moab = instance_double(Moab::StorageObject, size: 666, object_pathname: object_dir, current_version_id: 2, exist?: true)
         allow(Moab::StorageObject).to receive(:new).with(druid, instance_of(String)).and_return(moab)
       end
 
@@ -445,7 +485,7 @@ RSpec.describe Audit::CatalogToMoab do
       # use the same setup as 'catalog version > moab version', since we know that should
       # lead to an update_status('unexpected_version_on_storage') call
       before do
-        moab = instance_double(Moab::StorageObject, size: 666, object_pathname: object_dir)
+        moab = instance_double(Moab::StorageObject, size: 666, object_pathname: object_dir, exist?: true)
         allow(Moab::StorageObject).to receive(:new).with(druid, instance_of(String)).and_return(moab)
         allow(moab).to receive(:current_version_id).and_return(2)
       end

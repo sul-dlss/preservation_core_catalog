@@ -17,6 +17,10 @@ module MoabValidationHandler
     @moab ||= Moab::StorageObject.new(druid, object_dir)
   end
 
+  def online_moab_found?
+    moab&.exist?
+  end
+
   def can_validate_checksums?
     false
   end
@@ -89,5 +93,17 @@ module MoabValidationHandler
     else
       update_status('validity_unknown')
     end
+  end
+
+  def handle_missing_moab
+    transaction_ok = ActiveRecordUtils.with_transaction_and_rescue(results) do
+      results.add_result(AuditResults::MOAB_NOT_FOUND,
+                         db_created_at: complete_moab.created_at.iso8601,
+                         db_updated_at: complete_moab.updated_at.iso8601)
+
+      update_status('online_moab_not_found')
+      complete_moab.save!
+    end
+    results.remove_db_updated_results unless transaction_ok
   end
 end

@@ -71,43 +71,72 @@ class PreservedObjectHandler
 
     if invalid?
       results.add_result(AuditResults::INVALID_ARGUMENTS, errors.full_messages)
-    elsif PreservedObject.exists?(druid: druid)
-      Rails.logger.debug "check_existence #{druid} called"
-      transaction_ok = with_active_record_transaction_and_rescue do
-        raise_rollback_if_cm_po_version_mismatch
-
-        return results.report_results unless can_validate_current_comp_moab_status?
-
-        if incoming_version == comp_moab.version
-          set_status_as_seen_on_disk(true) unless comp_moab.status == 'ok'
-          results.add_result(AuditResults::VERSION_MATCHES, 'CompleteMoab')
-        elsif incoming_version > comp_moab.version
-          set_status_as_seen_on_disk(true) unless comp_moab.status == 'ok'
-          results.add_result(AuditResults::ACTUAL_VERS_GT_DB_OBJ, db_obj_name: 'CompleteMoab', db_obj_version: comp_moab.version)
-          if moab_validation_errors.empty?
-            comp_moab.upd_audstamps_version_size(ran_moab_validation?, incoming_version, incoming_size)
-            pres_object.current_version = incoming_version
-            pres_object.save!
-          else
-            update_status('invalid_moab')
-          end
-        else # incoming_version < comp_moab.version
-          set_status_as_seen_on_disk(false)
-          results.add_result(AuditResults::ACTUAL_VERS_LT_DB_OBJ, db_obj_name: 'CompleteMoab', db_obj_version: comp_moab.version)
-        end
-        comp_moab.update_audit_timestamps(ran_moab_validation?, true)
-        comp_moab.save!
-      end
-      results.remove_db_updated_results unless transaction_ok
-    else
-      results.add_result(AuditResults::DB_OBJ_DOES_NOT_EXIST, 'PreservedObject')
-      if moab_validation_errors.empty?
-        create_db_objects('validity_unknown')
-      else
-        create_db_objects('invalid_moab')
-      end
+      return results.report_results
     end
+
+    return results.report_results unless check_preserved_object_db_obj_exists && check_moab_db_obj_exists
+
+    unless online_moab_found?
+      handle_missing_moab
+
+      # Check if it moved to another location
+      MoabMovedHandler.new(comp_moab, results).check_and_handle_moved_moab
+      return results.report_results
+    end
+
+    Rails.logger.debug "check_existence #{druid} called"
+
+    transaction_ok = with_active_record_transaction_and_rescue do
+      raise_rollback_if_cm_po_version_mismatch
+
+      return results.report_results unless can_validate_current_comp_moab_status?
+
+      if incoming_version == comp_moab.version
+        # Error thrown if comp_moab not found for this storage root and caught by with_active_record_transaction_and_rescue
+        set_status_as_seen_on_disk(true) unless comp_moab.status == 'ok'
+        results.add_result(AuditResults::VERSION_MATCHES, 'CompleteMoab')
+      elsif incoming_version > comp_moab.version
+        set_status_as_seen_on_disk(true) unless comp_moab.status == 'ok'
+        results.add_result(AuditResults::ACTUAL_VERS_GT_DB_OBJ, db_obj_name: 'CompleteMoab', db_obj_version: comp_moab.version)
+        if moab_validation_errors.empty?
+          comp_moab.upd_audstamps_version_size(ran_moab_validation?, incoming_version, incoming_size)
+          pres_object.current_version = incoming_version
+          pres_object.save!
+        else
+          update_status('invalid_moab')
+        end
+      else # incoming_version < comp_moab.version
+        set_status_as_seen_on_disk(false)
+        results.add_result(AuditResults::ACTUAL_VERS_LT_DB_OBJ, db_obj_name: 'CompleteMoab', db_obj_version: comp_moab.version)
+      end
+      comp_moab.update_audit_timestamps(ran_moab_validation?, true)
+      comp_moab.save!
+    end
+    results.remove_db_updated_results unless transaction_ok
     results.report_results
+  end
+
+  def check_preserved_object_db_obj_exists
+    with_active_record_transaction_and_rescue do
+      # If it doesn't exist, error will be caught and DB_OBJ_DOES_NOT_EXIST added to results
+      pres_object
+      return true
+    end
+    if moab_validation_errors.empty?
+      create_db_objects('validity_unknown')
+    else
+      create_db_objects('invalid_moab')
+    end
+    false
+  end
+
+  def check_moab_db_obj_exists
+    with_active_record_transaction_and_rescue do
+      # If it doesn't exist, error will be caught and DB_OBJ_DOES_NOT_EXIST added to results
+      comp_moab
+      return true
+    end
+    false
   end
 
   def confirm_version

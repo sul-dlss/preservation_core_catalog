@@ -23,6 +23,7 @@ class AuditResults
   DB_OBJ_ALREADY_EXISTS = :db_obj_already_exists
   DB_OBJ_DOES_NOT_EXIST = :db_obj_does_not_exist
   CM_STATUS_CHANGED = :cm_status_changed
+  CM_STORAGE_ROOT_CHANGED = :cm_storage_root_changed
   UNEXPECTED_VERSION = :unexpected_version
   INVALID_MOAB = :invalid_moab
   CM_PO_VERSION_MISMATCH = :cm_po_version_mismatch
@@ -53,6 +54,7 @@ class AuditResults
     DB_OBJ_ALREADY_EXISTS => "%{addl} db object already exists",
     DB_OBJ_DOES_NOT_EXIST => "%{addl} db object does not exist",
     CM_STATUS_CHANGED => "CompleteMoab status changed from %{old_status} to %{new_status}",
+    CM_STORAGE_ROOT_CHANGED => "CompleteMoab storage root changed from %{old_storage_root} to %{new_storage_root}",
     UNEXPECTED_VERSION => "actual version (%{actual_version}) has unexpected relationship to %{db_obj_name} db version (%{db_obj_version}); ERROR!",
     INVALID_MOAB => "Invalid Moab, validation errors: %{addl}",
     CM_PO_VERSION_MISMATCH => "CompleteMoab online Moab version %{cm_version} does not match PreservedObject current_version %{po_version}",
@@ -99,6 +101,7 @@ class AuditResults
   ].freeze
 
   HONEYBADGER_REPORT_CODES = [
+    CM_STORAGE_ROOT_CHANGED,
     MOAB_FILE_CHECKSUM_MISMATCH,
     ZIP_PART_NOT_FOUND,
     ZIP_PART_CHECKSUM_MISMATCH,
@@ -109,14 +112,15 @@ class AuditResults
 
   DB_UPDATED_CODES = [
     CREATED_NEW_OBJECT,
-    CM_STATUS_CHANGED
+    CM_STATUS_CHANGED,
+    CM_STORAGE_ROOT_CHANGED
   ].freeze
 
   def self.logger_severity_level(result_code)
     case result_code
     when DB_OBJ_DOES_NOT_EXIST, ZIP_PARTS_NOT_CREATED, ZIP_PARTS_NOT_ALL_REPLICATED
       Logger::WARN
-    when VERSION_MATCHES, ACTUAL_VERS_GT_DB_OBJ, CREATED_NEW_OBJECT, CM_STATUS_CHANGED, MOAB_CHECKSUM_VALID
+    when VERSION_MATCHES, ACTUAL_VERS_GT_DB_OBJ, CREATED_NEW_OBJECT, CM_STATUS_CHANGED, CM_STORAGE_ROOT_CHANGED, MOAB_CHECKSUM_VALID
       Logger::INFO
     else
       Logger::ERROR
