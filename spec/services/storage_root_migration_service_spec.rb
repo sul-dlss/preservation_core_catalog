@@ -23,8 +23,8 @@ RSpec.describe StorageRootMigrationService do
     expect(complete_moab1.moab_storage_root).to eq(complete_moab2.moab_storage_root)
     expect(complete_moab1.moab_storage_root).not_to eq(complete_moab3.moab_storage_root)
 
-    druids = described_class.new(from_storage_root.name, to_storage_root.name).migrate.map { |druid| druid }
-    expect(druids.length).to eq(2)
+    druids = described_class.new(from_storage_root.name, to_storage_root.name).migrate
+    expect(druids).to include(complete_moab1.preserved_object.druid, complete_moab2.preserved_object.druid)
 
     complete_moab1.reload
     complete_moab2.reload

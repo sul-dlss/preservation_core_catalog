@@ -20,11 +20,11 @@ class StorageRootMigrationService
   private
 
   def from_root
-    @from_root ||= MoabStorageRoot.find_by(name: @from_name)
+    @from_root ||= MoabStorageRoot.find_by!(name: @from_name)
   end
 
   def to_root
-    @to_root ||= MoabStorageRoot.find_by(name: @to_name)
+    @to_root ||= MoabStorageRoot.find_by!(name: @to_name)
   end
 
   def migrate_moab(moab)
