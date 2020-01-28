@@ -41,7 +41,7 @@ RSpec.describe StorageRootMigrationService do
     expect(complete_moab1.status).to eq('validity_unknown')
     expect(complete_moab1.last_moab_validation).to be_nil
     expect(complete_moab1.last_checksum_validation).to be_nil
-    expect(complete_moab1.last_archive_audit).to be_nil
+    expect(complete_moab1.last_archive_audit).not_to be_nil
   end
 
   it 'does not migrate moabs on other storage roots' do

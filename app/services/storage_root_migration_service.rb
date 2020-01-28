@@ -19,8 +19,7 @@ class StorageRootMigrationService
         moab_storage_root_id: to_root.id,
         status: 'validity_unknown',
         last_moab_validation: nil,
-        last_checksum_validation: nil,
-        last_archive_audit: nil
+        last_checksum_validation: nil
       )
 
       druids
