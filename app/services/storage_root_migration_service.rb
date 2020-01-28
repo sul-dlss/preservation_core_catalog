@@ -9,12 +9,22 @@ class StorageRootMigrationService
 
   # @return [Array<String>] druids of migrated moabs
   def migrate
-    druids = []
-    from_root.complete_moabs.find_each do |complete_moab|
-      migrate_moab(complete_moab)
-      druids << complete_moab.preserved_object.druid
+    # no need to wrap in transaction, query not executed till e.g. #pluck or #update_all
+    cm_on_from_root_relation = CompleteMoab.where(moab_storage_root: from_root)
+
+    ApplicationRecord.transaction do
+      druids = cm_on_from_root_relation.joins(:preserved_object).pluck(:druid)
+
+      cm_on_from_root_relation.update_all(
+        moab_storage_root_id: to_root.id,
+        status: 'validity_unknown',
+        last_moab_validation: nil,
+        last_checksum_validation: nil,
+        last_archive_audit: nil
+      )
+
+      druids
     end
-    druids
   end
 
   private
@@ -25,15 +35,5 @@ class StorageRootMigrationService
 
   def to_root
     @to_root ||= MoabStorageRoot.find_by!(name: @to_name)
-  end
-
-  def migrate_moab(moab)
-    moab.moab_storage_root = to_root
-    moab.status = 'validity_unknown' # This will queue a CV.
-    # Fate of this to be determined by https://github.com/sul-dlss/preservation_catalog/issues/1329
-    moab.last_moab_validation = nil
-    moab.last_checksum_validation = nil
-    moab.last_archive_audit = nil
-    moab.save!
   end
 end
