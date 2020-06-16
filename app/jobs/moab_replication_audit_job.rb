@@ -9,7 +9,7 @@ class MoabReplicationAuditJob < ApplicationJob
 
   # @param [PreservedObject] for which to verify presence of the archive zips we think we've replicated (and possibly backfill those we haven't)
   def perform(preserved_object)
-    backfill_missing_zmvs(preserved_object)
+    backfill_missing_zmvs if Settings.replication.audit_should_backfill
     ZipEndpoint
       .includes(:zipped_moab_versions)
       .where(zipped_moab_versions: { preserved_object: preserved_object }).each do |endpoint|
@@ -20,8 +20,8 @@ class MoabReplicationAuditJob < ApplicationJob
 
   private
 
-  def backfill_missing_zmvs(preserved_object)
-    return unless Settings.replication.audit_should_backfill
+  def backfill_missing_zmvs
+    preserved_object = arguments.first
     zmvs = preserved_object.create_zipped_moab_versions!
     return if zmvs.empty?
     Audit::CatalogToArchive.logger.warn(
