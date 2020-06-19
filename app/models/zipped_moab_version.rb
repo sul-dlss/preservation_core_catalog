@@ -12,10 +12,6 @@ class ZippedMoabVersion < ApplicationRecord
   belongs_to :zip_endpoint, inverse_of: :zipped_moab_versions
   has_many :zip_parts, dependent: :destroy, inverse_of: :zipped_moab_version
 
-  # Note: In the context of creating many ZMV rows, this may *attempt* to queue the same druid/version multiple times,
-  # but queue locking easily prevents duplicates (and the job is idempotent anyway).
-  after_create :replicate!
-
   validates :preserved_object, :version, :zip_endpoint, presence: true
 
   scope :by_druid, lambda { |druid|
@@ -37,14 +33,5 @@ class ZippedMoabVersion < ApplicationRecord
 
   def all_parts_replicated?
     zip_parts.count.positive? && zip_parts.all?(&:ok?)
-  end
-
-  # Send to asynchronous replication pipeline
-  # @return [ZipmakerJob, nil] nil if unpersisted or parent PreservedObject has no replicatable Moab
-  def replicate!
-    return nil unless persisted?
-    storage_location = preserved_object.moab_replication_storage_location
-    return nil unless storage_location
-    ZipmakerJob.perform_later(preserved_object.druid, version, storage_location)
   end
 end

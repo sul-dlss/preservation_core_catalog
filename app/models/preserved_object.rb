@@ -38,7 +38,9 @@ class PreservedObject < ApplicationRecord
     params = (1..current_version).map do |v|
       ZipEndpoint.which_need_archive_copy(druid, v).map { |zep| { version: v, zip_endpoint: zep } }
     end.flatten.compact.uniq
-    zipped_moab_versions.create!(params)
+    zmvs = zipped_moab_versions.create!(params)
+    zmvs.pluck(:version).uniq.each { |version| replicate!(version) }
+    zmvs
   end
 
   def as_json(*)
@@ -51,17 +53,22 @@ class PreservedObject < ApplicationRecord
     MoabReplicationAuditJob.perform_later(self)
   end
 
+  private
+
   # We need a specific copy of a moab from which to create the zip file(s) to send to the cloud.
   # Of those eligible for replication, use whichever was checksum validated most recently.
   # @return [String, nil] The storage location (storage_root/storage_trunk) where the Moab that should be replicated lives.
   def moab_replication_storage_location
-    storage_location = moabs_eligible_for_replication.joins(:moab_storage_root).order(last_checksum_validation: :desc).limit(1).pluck(:storage_location).first
-    # TODO: raise if no replicable location?  log?  nothing?
-    return nil unless storage_location
-    storage_location
+    moabs_eligible_for_replication.joins(:moab_storage_root).order(last_checksum_validation: :desc).limit(1).pluck(:storage_location).first
   end
 
-  private
+  # Send to asynchronous replication pipeline
+  # @return [ZipmakerJob, nil] nil if unpersisted or parent PreservedObject has no replicatable Moab
+  def replicate!(version)
+    storage_location = moab_replication_storage_location
+    return nil unless storage_location
+    ZipmakerJob.perform_later(druid, version, storage_location)
+  end
 
   # a moab is eligible for replication if its status is 'ok' and its version is up to date with the latest seen for the object
   def moabs_eligible_for_replication
