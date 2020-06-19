@@ -120,6 +120,8 @@ RSpec.describe PreservedObject, type: :model do
     let!(:zip_ep) { zip_endpoints.first }
     let!(:zip_ep2) { zip_endpoints.second }
 
+    before { allow(ZipmakerJob).to receive(:perform_later) }
+
     it "creates ZMVs that don't yet exist for expected versions, but should" do
       expect { preserved_object.create_zipped_moab_versions! }.to change {
         ZipEndpoint.which_need_archive_copy(druid, current_version).to_a.to_set
@@ -154,6 +156,22 @@ RSpec.describe PreservedObject, type: :model do
     it 'if ZMVs already exist, return an empty array' do
       preserved_object.create_zipped_moab_versions!
       expect(preserved_object.create_zipped_moab_versions!).to eq []
+    end
+  end
+
+  describe '#replicate!' do
+    let!(:preserved_object) { create(:preserved_object, druid: druid, current_version: 3) }
+
+    it 'if PreservedObject does not have a replicatable moab, returns false, does not enqueue' do
+      expect(preserved_object).to receive(:moab_replication_storage_location).and_return(nil)
+      expect(ZipmakerJob).not_to receive(:perform_later)
+      expect(preserved_object.send(:replicate!, 1)).to be(nil)
+    end
+
+    it 'if PreservedObject is replicatable, passes druid and version to Zipmaker' do
+      expect(preserved_object).to receive(:moab_replication_storage_location).and_return('/storage_root/bc123df4567')
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 2, '/storage_root/bc123df4567')
+      preserved_object.send(:replicate!, 2)
     end
   end
 

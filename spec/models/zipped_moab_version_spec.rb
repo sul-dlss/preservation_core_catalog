@@ -22,22 +22,6 @@ RSpec.describe ZippedMoabVersion, type: :model do
   it { is_expected.to have_many(:zip_parts) }
   it { is_expected.to have_db_index(:preserved_object_id) }
 
-  describe '#replicate!' do
-    before { zmv.save! }
-
-    it 'if PreservedObject does not have a replicatable moab, returns false, does not enqueue' do
-      expect(preserved_object).to receive(:moab_replication_storage_location).and_return(nil)
-      expect(ZipmakerJob).not_to receive(:perform_later)
-      expect(zmv.replicate!).to be(nil)
-    end
-
-    it 'if PreservedObject is replicatable, passes druid and version to Zipmaker' do
-      expect(preserved_object).to receive(:moab_replication_storage_location).and_return('/storage_root/bc123df4567')
-      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, zmv.version, '/storage_root/bc123df4567')
-      zmv.replicate!
-    end
-  end
-
   describe '.by_druid' do
     before { zmv.save! }
 
