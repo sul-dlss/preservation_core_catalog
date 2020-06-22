@@ -32,15 +32,19 @@ class PreservedObject < ApplicationRecord
   # Endpoints may have been added, so we must check all dimensions.
   # For *this* and *previous* versions, create any ZippedMoabVersion records which don't yet exist for
   # ZipEndpoints on the parent PreservedObject's PreservationPolicy.
-  # @return [Array<ZippedMoabVersion>] the ZippedMoabVersion records that were created
+  # @return [Array<ZippedMoabVersion>, nil] the ZippedMoabVersion records that were created, or nil if no moabs were in a state allowing replication
   # @todo potential optimization: fold N which_need_archive_copy queries into one new query
   def create_zipped_moab_versions!
+    storage_location = moab_replication_storage_location
+    return nil unless storage_location
+
     params = (1..current_version).map do |v|
       ZipEndpoint.which_need_archive_copy(druid, v).map { |zep| { version: v, zip_endpoint: zep } }
     end.flatten.compact.uniq
-    zmvs = zipped_moab_versions.create!(params)
-    zmvs.pluck(:version).uniq.each { |version| replicate!(version) }
-    zmvs
+
+    zipped_moab_versions.create!(params).tap do |zmvs|
+      zmvs.pluck(:version).uniq.each { |version| ZipmakerJob.perform_later(druid, version, storage_location) }
+    end
   end
 
   def as_json(*)
@@ -60,14 +64,6 @@ class PreservedObject < ApplicationRecord
   # @return [String, nil] The storage location (storage_root/storage_trunk) where the Moab that should be replicated lives.
   def moab_replication_storage_location
     moabs_eligible_for_replication.joins(:moab_storage_root).order(last_checksum_validation: :desc).limit(1).pluck(:storage_location).first
-  end
-
-  # Send to asynchronous replication pipeline
-  # @return [ZipmakerJob, nil] nil if unpersisted or parent PreservedObject has no replicatable Moab
-  def replicate!(version)
-    storage_location = moab_replication_storage_location
-    return nil unless storage_location
-    ZipmakerJob.perform_later(druid, version, storage_location)
   end
 
   # a moab is eligible for replication if its status is 'ok' and its version is up to date with the latest seen for the object
