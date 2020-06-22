@@ -115,14 +115,25 @@ RSpec.describe PreservedObject, type: :model do
   describe '#create_zipped_moab_versions!' do
     let!(:preserved_object) { create(:preserved_object, druid: druid, current_version: 3) }
     let(:current_version) { preserved_object.current_version }
+    let!(:msr1) { create(:moab_storage_root) }
+    let!(:msr2) { create(:moab_storage_root) }
+    let!(:cm1) { create(:complete_moab, preserved_object: preserved_object, version: current_version, moab_storage_root: msr1) }
+    let!(:cm2) { create(:complete_moab, preserved_object: preserved_object, version: current_version - 1, moab_storage_root: msr2) }
     let(:zmvs_by_druid) { ZippedMoabVersion.by_druid(druid) }
     let(:zip_endpoints) { preserved_object.preservation_policy.zip_endpoints }
     let!(:zip_ep) { zip_endpoints.first }
     let!(:zip_ep2) { zip_endpoints.second }
 
-    before { allow(ZipmakerJob).to receive(:perform_later) }
+    before do
+      allow(ZipmakerJob).to receive(:perform_later)
+      ZippedMoabVersion.destroy_all # a bit contrived, but delete ZMVs auto-created by AR hook, so we can test #create_zipped_moab_versions!
+    end
 
     it "creates ZMVs that don't yet exist for expected versions, but should" do
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 1, cm1.moab_storage_root.storage_location)
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 2, cm1.moab_storage_root.storage_location)
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 3, cm1.moab_storage_root.storage_location)
+      expect(ZipmakerJob).not_to receive(:perform_later).with(anything, anything, cm2.moab_storage_root.storage_location)
       expect { preserved_object.create_zipped_moab_versions! }.to change {
         ZipEndpoint.which_need_archive_copy(druid, current_version).to_a.to_set
       }.from([zip_ep, zip_ep2].to_set).to([].to_set).and change {
@@ -141,6 +152,9 @@ RSpec.describe PreservedObject, type: :model do
 
       new_zip_ep = create(:zip_endpoint)
 
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 1, msr1.storage_location)
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 2, msr1.storage_location)
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 3, msr1.storage_location)
       expect { preserved_object.create_zipped_moab_versions! }.to change {
         ZipEndpoint.which_need_archive_copy(druid, current_version).to_a
       }.from([new_zip_ep]).to([]).and change {
