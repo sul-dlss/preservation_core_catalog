@@ -6,6 +6,6 @@ FactoryBot.define do
   factory :zipped_moab_version do
     version { 1 }
     zip_endpoint
-    complete_moab
+    preserved_object
   end
 end

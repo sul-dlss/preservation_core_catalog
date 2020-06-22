@@ -17,12 +17,12 @@ module Reporters
       ].freeze
     end
 
-    def handle_completed(druid, version, moab_storage_root, check_name, result)
+    def handle_completed(druid, version, storage_area, check_name, result)
       # Pass
     end
 
-    def handle_single_error(druid, _version, moab_storage_root, check_name, result)
-      Honeybadger.notify("#{check_name}(#{druid}, #{moab_storage_root&.name}) #{result.values.first}")
+    def handle_single_error(druid, _version, storage_area, check_name, result)
+      Honeybadger.notify("#{check_name}(#{druid}, #{storage_area&.to_s}) #{result.values.first}")
     end
   end
 end

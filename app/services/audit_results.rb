@@ -92,13 +92,13 @@ class AuditResults
     CM_STATUS_CHANGED
   ].freeze
 
-  attr_reader :result_array, :druid, :moab_storage_root, :logger
+  attr_reader :result_array, :druid, :storage_area, :logger
   attr_accessor :actual_version, :check_name
 
-  def initialize(druid, actual_version, moab_storage_root, check_name = nil, logger: nil)
+  def initialize(druid, actual_version, storage_area, check_name = nil, logger: nil)
     @druid = druid
     @actual_version = actual_version
-    @moab_storage_root = moab_storage_root
+    @storage_area = storage_area
     @check_name = check_name
     @result_array = []
     @logger = logger
@@ -153,14 +153,14 @@ class AuditResults
 
   def report_errors(results)
     reporters.each do |reporter|
-      reporter.report_errors(druid: druid, version: actual_version, moab_storage_root: moab_storage_root, check_name: check_name, results: results)
+      reporter.report_errors(druid: druid, version: actual_version, storage_area: storage_area, check_name: check_name, results: results)
     end
   end
 
   def report_completed(results)
     reporters.each do |reporter|
       results.each do |result|
-        reporter.report_completed(druid: druid, version: actual_version, moab_storage_root: moab_storage_root, check_name: check_name, result: result)
+        reporter.report_completed(druid: druid, version: actual_version, storage_area: storage_area, check_name: check_name, result: result)
       end
     end
   end
@@ -181,7 +181,7 @@ class AuditResults
 
   def string_prefix
     @string_prefix ||= begin
-      location_info = "actual location: #{moab_storage_root.name}" if moab_storage_root
+      location_info = "actual location: #{storage_area}" if storage_area
       actual_version_info = "actual version: #{actual_version}" if actual_version
       "#{check_name} (#{location_info}; #{actual_version_info})"
     end

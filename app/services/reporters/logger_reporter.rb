@@ -14,21 +14,21 @@ module Reporters
       nil
     end
 
-    def handle_completed(druid, _version, moab_storage_root, check_name, result)
-      log(druid, moab_storage_root, check_name, result)
+    def handle_completed(druid, _version, storage_area, check_name, result)
+      log(druid, storage_area, check_name, result)
     end
 
-    def handle_single_error(druid, _version, moab_storage_root, check_name, result)
-      log(druid, moab_storage_root, check_name, result)
+    def handle_single_error(druid, _version, storage_area, check_name, result)
+      log(druid, storage_area, check_name, result)
     end
 
     private
 
     attr_reader :logger
 
-    def log(druid, moab_storage_root, check_name, result)
+    def log(druid, storage_area, check_name, result)
       severity = logger_severity_level(result.keys.first)
-      logger.add(severity, "#{check_name}(#{druid.delete_prefix('druid:')}, #{moab_storage_root&.name}) #{result.values.first}")
+      logger.add(severity, "#{check_name}(#{druid.delete_prefix('druid:')}, #{storage_area&.to_s}) #{result.values.first}")
     end
 
     def logger_severity_level(result_code)

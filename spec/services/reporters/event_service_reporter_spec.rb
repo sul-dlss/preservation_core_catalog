@@ -31,7 +31,7 @@ RSpec.describe Reporters::EventServiceReporter do
       end
 
       it 'creates events' do
-        subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result1, result2])
+        subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result1, result2])
         error1 = 'FooCheck (actual location: fixture_sr1; actual version: 6) || Invalid Moab, validation errors: ' \
           "[Version directory name not in 'v00xx' format: original-v1]"
         expect(client).to have_received(:create).with(
@@ -39,7 +39,7 @@ RSpec.describe Reporters::EventServiceReporter do
           data: {
             host: 'fakehost',
             invoked_by: 'preservation-catalog',
-            storage_root: 'fixture_sr1',
+            storage_area: 'fixture_sr1',
             actual_version: 6,
             check_name: 'moab-valid',
             error: error1
@@ -52,7 +52,7 @@ RSpec.describe Reporters::EventServiceReporter do
           data: {
             host: 'fakehost',
             invoked_by: 'preservation-catalog',
-            storage_root: 'fixture_sr1',
+            storage_area: 'fixture_sr1',
             actual_version: 6,
             check_name: 'moab-valid',
             error: error2
@@ -66,13 +66,13 @@ RSpec.describe Reporters::EventServiceReporter do
       let(:result2) { { AuditResults::UNEXPECTED_VERSION => 'actual version (6) has unexpected relationship to db version' } }
 
       it 'merges errors and creates single event  ' do
-        subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result1, result2])
+        subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result1, result2])
         expect(client).to have_received(:create).with(
           type: 'preservation_audit_failure',
           data: {
             host: 'fakehost',
             invoked_by: 'preservation-catalog',
-            storage_root: 'fixture_sr1',
+            storage_area: 'fixture_sr1',
             actual_version: 6,
             check_name: 'preservation-audit',
             error: 'FooCheck (actual location: fixture_sr1; actual version: 6) does not match PreservedObject ' \
@@ -87,14 +87,14 @@ RSpec.describe Reporters::EventServiceReporter do
     let(:result) { { AuditResults::CM_STATUS_CHANGED => 'CompleteMoab status changed from invalid_moab' } }
 
     it 'creates events' do
-      subject.report_completed(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, result: result)
+      subject.report_completed(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, result: result)
 
       expect(client).to have_received(:create).with(
         type: 'preservation_audit_success',
         data: {
           host: 'fakehost',
           invoked_by: 'preservation-catalog',
-          storage_root: 'fixture_sr1',
+          storage_area: 'fixture_sr1',
           actual_version: 6,
           check_name: 'preservation-audit'
         }
@@ -105,7 +105,7 @@ RSpec.describe Reporters::EventServiceReporter do
         data: {
           host: 'fakehost',
           invoked_by: 'preservation-catalog',
-          storage_root: 'fixture_sr1',
+          storage_area: 'fixture_sr1',
           actual_version: 6,
           check_name: 'moab-valid'
         }

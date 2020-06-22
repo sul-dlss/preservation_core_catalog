@@ -9,7 +9,7 @@ class DruidVersionZipPart
   attr_reader :dvz, :part_filename
 
   delegate :base64digest, :hexdigest, to: :md5
-  delegate :druid, :part_checksum_paths, :part_paths, :hex_to_base64, :zip_command, :zip_version, to: :dvz
+  delegate :druid, :part_paths, :hex_to_base64, :zip_command, :zip_version, to: :dvz
 
   alias s3_key part_filename
 

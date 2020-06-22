@@ -5,8 +5,7 @@
 # This model's data is populated by PlexerJob.
 class ZipPart < ApplicationRecord
   belongs_to :zipped_moab_version, inverse_of: :zip_parts
-  delegate :zip_endpoint, :complete_moab, to: :zipped_moab_version
-  delegate :preserved_object, to: :complete_moab
+  delegate :zip_endpoint, :preserved_object, to: :zipped_moab_version
 
   # @note Hash values cannot be modified without migrating any associated persisted data.
   # @see [enum docs] http://api.rubyonrails.org/classes/ActiveRecord/Enum.html

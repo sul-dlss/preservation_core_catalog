@@ -61,8 +61,8 @@ RSpec.describe ZipPart, type: :model do
   end
 
   describe '#druid_version_zip' do
-    let(:cm) { build(:complete_moab, version: 3) }
-    let(:zmv) { build(:zipped_moab_version, complete_moab: cm, version: 1) }
+    let(:po) { build(:preserved_object, current_version: 3) }
+    let(:zmv) { build(:zipped_moab_version, preserved_object: po, version: 1) }
     let(:zp) { described_class.new(args) }
 
     it 'gets a DruidVersionZip of the correct version' do
@@ -71,12 +71,12 @@ RSpec.describe ZipPart, type: :model do
   end
 
   describe '#s3_key' do
-    let(:cm) { build(:complete_moab, version: 3) }
-    let(:zmv) { build(:zipped_moab_version, complete_moab: cm, version: 1) }
+    let(:po) { build(:preserved_object, current_version: 3) }
+    let(:zmv) { build(:zipped_moab_version, preserved_object: po, version: 1) }
     let(:zp) { described_class.new(args) }
 
     it 'generates an s3_key with the correct version and suffix' do
-      expect(zp.s3_key).to eq "#{DruidTools::Druid.new(cm.preserved_object.druid).tree.join('/')}.v0001.zip"
+      expect(zp.s3_key).to eq "#{DruidTools::Druid.new(po.druid).tree.join('/')}.v0001.zip"
     end
   end
 

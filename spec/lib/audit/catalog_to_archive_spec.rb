@@ -4,8 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Audit::CatalogToArchive do
   let(:zmv) { create(:zipped_moab_version) }
-  let(:cm) { zmv.complete_moab }
-  let(:results) { AuditResults.new(cm.preserved_object.druid, nil, cm.moab_storage_root, 'CatalogToArchiveSpec') }
+  let(:results) { AuditResults.new(zmv.preserved_object.druid, nil, zmv.zip_endpoint, 'CatalogToArchiveSpec') }
   let(:version) { zmv.version }
   let(:endpoint_name) { zmv.zip_endpoint.endpoint_name }
   let(:result_prefix) { "#{version} on #{endpoint_name}" }

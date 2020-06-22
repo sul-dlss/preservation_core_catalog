@@ -236,14 +236,14 @@ RSpec.describe ChecksumValidator do
         expect(honeybadger_reporter).to have_received(:report_errors)
           .with(druid: 'tr808sp1200',
                 version: 0,
-                moab_storage_root: ms_root,
+                storage_area: ms_root,
                 check_name: 'validate_checksums',
                 results: [{ moab_not_found: match(reason) },
                           { cm_status_changed: 'CompleteMoab status changed from validity_unknown to online_moab_not_found' }])
         expect(event_service_reporter).to have_received(:report_errors)
           .with(druid: 'tr808sp1200',
                 version: 0,
-                moab_storage_root: ms_root,
+                storage_area: ms_root,
                 check_name: 'validate_checksums',
                 results: [{ moab_not_found: match(reason) },
                           { cm_status_changed: 'CompleteMoab status changed from validity_unknown to online_moab_not_found' }])
@@ -577,7 +577,7 @@ RSpec.describe ChecksumValidator do
         .with(druid: druid,
               version: 3,
               check_name: 'validate_checksums',
-              moab_storage_root: ms_root,
+              storage_area: ms_root,
               result: { cm_status_changed: 'CompleteMoab status changed from invalid_moab to ok' })
       cv.validate_checksums
     end
