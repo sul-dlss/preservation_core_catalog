@@ -25,9 +25,6 @@ class CompleteMoab < ApplicationRecord
   # NOTE: we'd like to check if there is a different complete_moab for the preserved_object and
   #  assign the other complete_moab to preserved_objects_primary_moab
   has_one :preserved_objects_primary_moab, dependent: :destroy
-  has_many :zipped_moab_versions, dependent: :restrict_with_exception, inverse_of: :complete_moab
-
-  delegate :s3_key, to: :druid_version_zip
 
   validates :moab_storage_root, :preserved_object, :status, :version, presence: true
   validates_uniqueness_of :preserved_object_id, scope: [:moab_storage_root_id]
@@ -56,44 +53,15 @@ class CompleteMoab < ApplicationRecord
       )
   }
 
-  scope :archive_check_expired, lambda {
-    joins(:preserved_object)
-      .joins(
-        'INNER JOIN preservation_policies'\
-        ' ON preservation_policies.id = preserved_objects.preservation_policy_id'\
-        ' AND (last_archive_audit + (archive_ttl * INTERVAL \'1 SECOND\')) < CURRENT_TIMESTAMP'\
-        ' OR last_archive_audit IS NULL'
-      )
-  }
-
-  # This is where we make sure we have ZMV rows for all needed ZipEndpoints and versions.
-  # Endpoints may have been added, so we must check all dimensions.
-  # For *this* and *previous* versions, create any ZippedMoabVersion records which don't yet exist for
-  # ZipEndpoints on the parent PreservedObject's PreservationPolicy.
-  # @return [Array<ZippedMoabVersion>] the ZippedMoabVersion records that were created
-  # @todo potential optimization: fold N which_need_archive_copy queries into one new query
-  def create_zipped_moab_versions!
-    params = (1..version).map do |v|
-      ZipEndpoint.which_need_archive_copy(preserved_object.druid, v).map { |zep| { version: v, zip_endpoint: zep } }
-    end.flatten.compact.uniq
-    zipped_moab_versions.create!(params)
-  end
+  # TODO: create_missing_zipped_moab_versions! would be a better name
+  delegate :create_zipped_moab_versions!, to: :preserved_object
 
   # Send to asynchronous checksum validation pipeline
   def validate_checksums!
     ChecksumValidationJob.perform_later(self)
   end
 
-  # Queue a job that will check to see whether this CompleteMoab has been
-  # fully replicated to all target ZipEndpoints
-  def audit_moab_version_replication!
-    MoabReplicationAuditJob.perform_later(self)
-  end
-
-  def druid_version_zip
-    @druid_version_zip ||= DruidVersionZip.new(preserved_object.druid, version)
-  end
-
+  # TODO: may become obsolete
   def replicatable_status?
     ok?
   end

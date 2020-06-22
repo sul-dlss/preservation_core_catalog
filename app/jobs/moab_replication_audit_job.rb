@@ -1,31 +1,31 @@
 # frozen_string_literal: true
 
-# Confirms a CompleteMoab has all versions/parts replicated for each of its target endpoints.
+# Checks whether a PreservedObject has all versions/parts replicated for each of its target endpoints.
 # @note Enqueues a check per endpoint
 # @example usage
-#   MoabReplicationAuditJob.perform_later(cm)
+#   MoabReplicationAuditJob.perform_later(preserved_object)
 class MoabReplicationAuditJob < ApplicationJob
   queue_as :moab_replication_audit
 
-  # @param [CompleteMoab] verify that the zip exists on the endpoint
-  def perform(complete_moab)
-    backfill_missing_zmvs(complete_moab)
+  # @param [PreservedObject] for which to verify presence of the archive zips we think we've replicated (and possibly backfill those we haven't)
+  def perform(preserved_object)
+    backfill_missing_zmvs(preserved_object)
     ZipEndpoint
       .includes(:zipped_moab_versions)
-      .where(zipped_moab_versions: { complete_moab: complete_moab }).each do |endpoint|
-        PartReplicationAuditJob.perform_later(complete_moab, endpoint)
+      .where(zipped_moab_versions: { preserved_object: preserved_object }).each do |endpoint|
+        PartReplicationAuditJob.perform_later(preserved_object, endpoint)
       end
-    complete_moab.update(last_archive_audit: Time.current)
+    preserved_object.update(last_archive_audit: Time.current)
   end
 
   private
 
-  def backfill_missing_zmvs(complete_moab)
+  def backfill_missing_zmvs(preserved_object)
     return unless Settings.replication.audit_should_backfill
-    zmvs = complete_moab.create_zipped_moab_versions!
+    zmvs = preserved_object.create_zipped_moab_versions!
     return if zmvs.empty?
     Audit::CatalogToArchive.logger.warn(
-      "#{self.class}: #{complete_moab.preserved_object.druid} backfilled #{zmvs.count} ZippedMoabVersions: #{format_zmvs(zmvs)}"
+      "#{self.class}: #{preserved_object.druid} backfilled #{zmvs.count} ZippedMoabVersions: #{format_zmvs(zmvs)}"
     )
   end
 

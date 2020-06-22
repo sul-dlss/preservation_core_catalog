@@ -36,6 +36,10 @@ class MoabStorageRoot < ApplicationRecord
     end
   end
 
+  def to_s
+    name
+  end
+
   # Iterates over the storage roots enumerated in settings, creating a MoabStorageRoot for
   # each if it doesn't already exist.  Besides db/seeds.rb, this should be used rarely, if at all.
   # @param preservation_policies [Enumerable<PreservationPolicy>] list of preservation policies

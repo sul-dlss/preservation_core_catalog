@@ -10,7 +10,7 @@ every :tuesday, roles: [:queue_populator] do
 end
 every :wednesday, roles: [:queue_populator] do
   set :output, standard: nil, error: 'log/c2a-err.log'
-  runner 'CompleteMoab.archive_check_expired.find_each(&:audit_moab_version_replication!)'
+  runner 'PreservedObject.archive_check_expired.find_each(&:audit_moab_version_replication!)'
 end
 every :friday, roles: [:queue_populator] do
   set :output, standard: nil, error: 'log/c2m-err.log'

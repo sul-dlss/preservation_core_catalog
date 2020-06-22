@@ -10,8 +10,7 @@ RSpec.describe StorageRootMigrationService do
   let(:complete_moab1) {
     create(:complete_moab, status: 'ok',
                            last_moab_validation: Time.now,
-                           last_checksum_validation: Time.now,
-                           last_archive_audit: Time.now)
+                           last_checksum_validation: Time.now)
   }
 
   let(:complete_moab2) { create(:complete_moab, status: 'invalid_moab', moab_storage_root: from_storage_root) }
@@ -44,7 +43,6 @@ RSpec.describe StorageRootMigrationService do
     expect(complete_moab1.status_details).to be_nil
     expect(complete_moab1.last_moab_validation).to be_nil
     expect(complete_moab1.last_checksum_validation).to be_nil
-    expect(complete_moab1.last_archive_audit).not_to be_nil
   end
 
   it 'queues checksum validation jobs' do

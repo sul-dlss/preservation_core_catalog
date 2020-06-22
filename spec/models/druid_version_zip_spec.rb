@@ -50,6 +50,7 @@ describe DruidVersionZip do
   end
 
   describe '#create_zip!' do
+    let(:dvz) { described_class.new(druid, version, 'spec/fixtures/storage_root01/sdr2objects') }
     let(:zip_path) { dvz.file_path }
     let(:version) { 3 } # v1 and v2 pre-existing
 
@@ -169,9 +170,19 @@ describe DruidVersionZip do
   end
 
   describe '#moab_version_path' do
-    it 'returns authoritative file location' do
-      expect(dvz.moab_version_path)
-        .to eq 'spec/fixtures/storage_root01/sdr2objects/bj/102/hs/9687/bj102hs9687/v0001'
+    context 'storage_location is not available' do
+      it 'raises an error' do
+        expect { dvz.moab_version_path }.to raise_error("cannot determine moab_version_path for #{druid} v#{version}, storage_location not provided")
+      end
+    end
+
+    context 'storage_location is provided in the constructor' do
+      let(:dvz) { described_class.new(druid, version, 'spec/fixtures/storage_root01/sdr2objects') }
+
+      it 'returns authoritative druid version location' do
+        expect(dvz.moab_version_path)
+          .to eq 'spec/fixtures/storage_root01/sdr2objects/bj/102/hs/9687/bj102hs9687/v0001'
+      end
     end
   end
 
@@ -203,6 +214,7 @@ describe DruidVersionZip do
 
   describe '#part_paths' do # zip splits
     let(:druid) { 'dc048cw1328' } # fixture is 4.9 MB
+    let(:dvz) { described_class.new(druid, version, 'spec/fixtures/storage_root02/sdr2objects') }
 
     before do
       allow(dvz).to receive(:zip_split_size).and_return('1m')
@@ -240,6 +252,8 @@ describe DruidVersionZip do
   end
 
   describe '#work_dir' do
+    let(:dvz) { described_class.new(druid, version, 'spec/fixtures/storage_root01/sdr2objects') }
+
     it 'returns Pathname directory where the zip command is executed' do
       expect(dvz.work_dir.to_s).to eq 'spec/fixtures/storage_root01/sdr2objects/bj/102/hs/9687'
     end

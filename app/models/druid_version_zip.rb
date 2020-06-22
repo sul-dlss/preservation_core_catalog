@@ -8,15 +8,18 @@ require 'open3'
 # See comment on part_paths method re: individual part suffixes.
 # Just a regular model, not an ActiveRecord-backed model
 class DruidVersionZip
-  attr_reader :druid, :version
+  attr_reader :druid, :version, :storage_location
 
   delegate :base64digest, :hexdigest, to: :md5
 
   # @param [String] druid
   # @param [Integer] version
-  def initialize(druid, version)
-    @druid = DruidTools::Druid.new(druid.downcase)
+  # @param [String] storage_location The path of storage_root/storage_trunk with the druid tree from which the zipped version should be
+  #  created.  if nil, zip creation raises an error.
+  def initialize(druid, version, storage_location = nil)
+    @druid = DruidTools::Druid.new(druid.downcase, storage_location)
     @version = version
+    @storage_location = storage_location
   end
 
   # @return [String] Filename/key without extension, in common to all this object's zip parts
@@ -75,8 +78,10 @@ class DruidVersionZip
     [[hex].pack('H*')].pack('m0')
   end
 
+  # @raise [StandardError] if storage_location is not available (should have been provided in constructor)
   def moab_version_path
-    @moab_version_path ||= Moab::StorageServices.object_version_path(druid.id, version)
+    raise "cannot determine moab_version_path for #{druid.id} v#{version}, storage_location not provided" unless storage_location
+    @moab_version_path ||= "#{druid.path}/#{v_version}"
   end
 
   # @return [Array<String>] relative paths, i.e. s3_part_keys for existing parts
@@ -99,6 +104,7 @@ class DruidVersionZip
   end
 
   # @return [Pathname] The proper directory in which to execute zip_command
+  # @raise [StandardError] if storage_location is not available (should have been provided in constructor)
   def work_dir
     Pathname.new(moab_version_path).parent.parent
   end

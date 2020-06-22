@@ -3,37 +3,37 @@
 require 'rails_helper'
 
 RSpec.describe ZippedMoabVersion, type: :model do
-  let(:cm) { create(:complete_moab) }
-  let(:zmv) { create(:zipped_moab_version, complete_moab: cm) }
+  let(:preserved_object) { create(:preserved_object) }
+  let(:zmv) { create(:zipped_moab_version, preserved_object: preserved_object) }
 
   it 'is not valid without all required valid attributes' do
     expect(described_class.new).not_to be_valid
-    expect(described_class.new(complete_moab: cm)).not_to be_valid
+    expect(described_class.new(preserved_object: preserved_object)).not_to be_valid
     expect(zmv).to be_valid
   end
 
   it { is_expected.to validate_presence_of(:zip_endpoint) }
-  it { is_expected.to validate_presence_of(:complete_moab) }
+  it { is_expected.to validate_presence_of(:preserved_object) }
   it { is_expected.to validate_presence_of(:version) }
 
-  it { is_expected.to belong_to(:complete_moab) }
+  it { is_expected.to belong_to(:preserved_object) }
   it { is_expected.to belong_to(:zip_endpoint) }
   it { is_expected.to have_db_index(:zip_endpoint_id) }
   it { is_expected.to have_many(:zip_parts) }
-  it { is_expected.to have_db_index(:complete_moab_id) }
+  it { is_expected.to have_db_index(:preserved_object_id) }
 
   describe '#replicate!' do
     before { zmv.save! }
 
-    it 'if CM is unreplicatable, returns false, does not enqueue' do
-      expect(cm).to receive(:replicatable_status?).and_return(false)
+    it 'if PreservedObject does not have a replicatable moab, returns false, does not enqueue' do
+      expect(preserved_object).to receive(:moab_replication_storage_location).and_return(nil)
       expect(ZipmakerJob).not_to receive(:perform_later)
       expect(zmv.replicate!).to be(nil)
     end
 
-    it 'if CM is replicatable, passes druid and version to Zipmaker' do
-      expect(cm).to receive(:replicatable_status?).and_return(true)
-      expect(ZipmakerJob).to receive(:perform_later).with(cm.preserved_object.druid, cm.version)
+    it 'if PreservedObject is replicatable, passes druid and version to Zipmaker' do
+      expect(preserved_object).to receive(:moab_replication_storage_location).and_return('/storage_root/bc123df4567')
+      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, zmv.version, '/storage_root/bc123df4567')
       zmv.replicate!
     end
   end
@@ -41,9 +41,8 @@ RSpec.describe ZippedMoabVersion, type: :model do
   describe '.by_druid' do
     before { zmv.save! }
 
-    let(:po) { build(:preserved_object, druid: 'jj925bx9565') }
-    let(:cm_diff) { build(:complete_moab, preserved_object: po) }
-    let!(:zmv_diff_druid) { create(:zipped_moab_version, complete_moab: cm_diff) }
+    let(:po_diff) { build(:preserved_object, druid: 'jj925bx9565') }
+    let!(:zmv_diff_druid) { create(:zipped_moab_version, preserved_object: po_diff) }
 
     it "returns the ZMV's for the given druid" do
       expect(described_class.by_druid('jj925bx9565').sort).to include zmv_diff_druid

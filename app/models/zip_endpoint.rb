@@ -65,6 +65,10 @@ class ZipEndpoint < ApplicationRecord
     raise "Failed to return audit class based on setting for #{endpoint_name}.  Check setting string for accuracy."
   end
 
+  def to_s
+    endpoint_name
+  end
+
   private
 
   def audit_class_setting

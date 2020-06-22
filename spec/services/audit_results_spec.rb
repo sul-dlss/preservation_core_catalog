@@ -45,33 +45,33 @@ RSpec.describe AuditResults do
     it 'invokes the reporters' do
       audit_results.report_results
       expect(workflow_reporter).to have_received(:report_errors)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               results: [{ invalid_moab: "Invalid Moab, validation errors: [\"Version directory name not in 'v00xx' " \
           'format: original-v1", "Version v0005: No files present in manifest dir"]' }])
       expect(event_service_reporter).to have_received(:report_errors)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               results: [{ invalid_moab: "Invalid Moab, validation errors: [\"Version directory name not in 'v00xx' " \
           'format: original-v1", "Version v0005: No files present in manifest dir"]' }])
       expect(honeybadger_reporter).to have_received(:report_errors)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               results: [{ invalid_moab: "Invalid Moab, validation errors: [\"Version directory name not in 'v00xx' " \
           'format: original-v1", "Version v0005: No files present in manifest dir"]' }])
       expect(logger_reporter).to have_received(:report_errors)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               results: [{ invalid_moab: "Invalid Moab, validation errors: [\"Version directory name not in 'v00xx' " \
           'format: original-v1", "Version v0005: No files present in manifest dir"]' }])
 
       expect(workflow_reporter).to have_received(:report_completed)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               result: { cm_status_changed: 'CompleteMoab status changed from invalid_checksum to ok' })
       expect(event_service_reporter).to have_received(:report_completed)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               result: { cm_status_changed: 'CompleteMoab status changed from invalid_checksum to ok' })
       expect(honeybadger_reporter).to have_received(:report_completed)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               result: { cm_status_changed: 'CompleteMoab status changed from invalid_checksum to ok' })
       expect(logger_reporter).to have_received(:report_completed)
-        .with(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: nil,
+        .with(druid: druid, version: actual_version, storage_area: ms_root, check_name: nil,
               result: { cm_status_changed: 'CompleteMoab status changed from invalid_checksum to ok' })
     end
   end

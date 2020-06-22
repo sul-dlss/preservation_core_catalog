@@ -21,7 +21,7 @@ RSpec.describe Reporters::LoggerReporter do
     let(:version_not_matched_str) { 'does not match PreservedObject current_version' }
 
     it 'logs to Rails logger' do
-      subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result1])
+      subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result1])
       # Logs with check name, druid, storage root, and message
       expect(Rails.logger).to have_received(:add)
         .with(Logger::ERROR, 'FooCheck(ab123cd4567, fixture_sr1) does not match PreservedObject current_version')
@@ -32,7 +32,7 @@ RSpec.describe Reporters::LoggerReporter do
       let(:zip_parts_not_created_str) { 'no zip_parts exist yet for this ZippedMoabVersion' }
 
       it 'logs each result' do
-        subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result1, result2])
+        subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result1, result2])
         expect(Rails.logger).to have_received(:add).with(Logger::ERROR, a_string_matching(version_not_matched_str))
         expect(Rails.logger).to have_received(:add).with(Logger::WARN, a_string_matching(zip_parts_not_created_str))
       end
@@ -43,7 +43,7 @@ RSpec.describe Reporters::LoggerReporter do
     let(:result) { { AuditResults::CM_STATUS_CHANGED => 'CompleteMoab status changed from invalid_moab' } }
 
     it 'logs to Rails logger' do
-      subject.report_completed(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, result: result)
+      subject.report_completed(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, result: result)
       expect(Rails.logger).to have_received(:add)
         .with(Logger::INFO, 'FooCheck(ab123cd4567, fixture_sr1) CompleteMoab status changed from invalid_moab')
     end

@@ -35,19 +35,19 @@ module Reporters
       ].freeze
     end
 
-    def handle_completed(druid, version, moab_storage_root, _check_name, _result)
-      create_success_event(druid, version, 'moab-valid', moab_storage_root)
-      create_success_event(druid, version, 'preservation-audit', moab_storage_root)
+    def handle_completed(druid, version, storage_area, _check_name, _result)
+      create_success_event(druid, version, 'moab-valid', storage_area)
+      create_success_event(druid, version, 'preservation-audit', storage_area)
     end
 
-    def handle_single_error(druid, version, moab_storage_root, check_name, result)
-      error_message = MessageHelper.invalid_moab_message(check_name, version, moab_storage_root, result)
-      create_error_event(druid, version, 'moab-valid', moab_storage_root, error_message)
+    def handle_single_error(druid, version, storage_area, check_name, result)
+      error_message = MessageHelper.invalid_moab_message(check_name, version, storage_area, result)
+      create_error_event(druid, version, 'moab-valid', storage_area, error_message)
     end
 
-    def handle_merge_error(druid, version, moab_storage_root, check_name, results)
-      error_message = MessageHelper.results_as_message(check_name, version, moab_storage_root, results)
-      create_error_event(druid, version, 'preservation-audit', moab_storage_root, error_message)
+    def handle_merge_error(druid, version, storage_area, check_name, results)
+      error_message = MessageHelper.results_as_message(check_name, version, storage_area, results)
+      create_error_event(druid, version, 'preservation-audit', storage_area, error_message)
     end
 
     private
@@ -56,26 +56,26 @@ module Reporters
       Dor::Services::Client.object(druid).events
     end
 
-    def create_success_event(druid, version, process_name, moab_storage_root)
+    def create_success_event(druid, version, process_name, storage_area)
       events_client_for(druid).create(
         type: 'preservation_audit_success',
         data: {
           host: Socket.gethostname,
           invoked_by: 'preservation-catalog',
-          storage_root: moab_storage_root&.name,
+          storage_area: storage_area&.to_s,
           actual_version: version,
           check_name: process_name
         }
       )
     end
 
-    def create_error_event(druid, version, process_name, moab_storage_root, error_message)
+    def create_error_event(druid, version, process_name, storage_area, error_message)
       events_client_for(druid).create(
         type: 'preservation_audit_failure',
         data: {
           host: Socket.gethostname,
           invoked_by: 'preservation-catalog',
-          storage_root: moab_storage_root&.name,
+          storage_area: storage_area&.to_s,
           actual_version: version,
           check_name: process_name,
           error: error_message

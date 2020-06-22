@@ -6,7 +6,7 @@
 # @note This name is slightly misleading, as this class solely deals with AWS US West 2 endpoint
 class S3WestDeliveryJob < ZipPartJobBase
   queue_as :s3_us_west_2_delivery
-  # note: base class gives us `zip`, `dvz_part`
+  # note: base class gives us `zip`, `dvz_part` (but not an instance of zip with the path to the moab used for creation)
 
   before_enqueue { |job| job.zip_info_check!(job.arguments.fourth) }
 

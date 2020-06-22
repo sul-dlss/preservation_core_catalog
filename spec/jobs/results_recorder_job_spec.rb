@@ -3,14 +3,16 @@
 require 'rails_helper'
 
 describe ResultsRecorderJob, type: :job do
-  let(:cm) { create(:complete_moab) }
-  let(:zmv) { cm.zipped_moab_versions.first }
-  let(:zmv2) { cm.zipped_moab_versions.second }
-  let(:druid) { cm.preserved_object.druid }
+  let(:preserved_object) { create(:preserved_object) }
+  let(:zmv) { preserved_object.zipped_moab_versions.first }
+  let(:zmv2) { preserved_object.zipped_moab_versions.second }
+  let(:druid) { preserved_object.druid }
   let(:zip_endpoint) { zmv.zip_endpoint }
   let(:zip_endpoint2) { zmv2.zip_endpoint }
 
   before do
+    # creating the CompleteMoab triggers associated ZippedMoabVersion creation via AR hooks
+    create(:complete_moab, preserved_object: preserved_object, version: preserved_object.current_version)
     zmv.zip_parts.create(attributes_for(:zip_part))
     zmv2.zip_parts.create(attributes_for(:zip_part))
   end
@@ -42,7 +44,7 @@ describe ResultsRecorderJob, type: :job do
     let(:other_ep) { create(:zip_endpoint, delivery_class: 2) }
 
     before do
-      cm.zipped_moab_versions.create!(version: zmv.version, zip_endpoint: other_ep)
+      preserved_object.zipped_moab_versions.create!(version: zmv.version, zip_endpoint: other_ep)
     end
 
     it 'does not send to replication.results queue' do

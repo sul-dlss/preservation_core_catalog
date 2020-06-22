@@ -66,31 +66,17 @@ RSpec.describe CompleteMoab, type: :model do
   it { is_expected.to have_db_index(:last_version_audit) }
   it { is_expected.to have_db_index(:last_moab_validation) }
   it { is_expected.to have_db_index(:last_checksum_validation) }
-  it { is_expected.to have_db_index(:last_archive_audit) }
   it { is_expected.to have_db_index(:moab_storage_root_id) }
   it { is_expected.to have_db_index(:preserved_object_id) }
   it { is_expected.to validate_presence_of(:moab_storage_root) }
   it { is_expected.to validate_presence_of(:preserved_object) }
   it { is_expected.to validate_presence_of(:version) }
   it { is_expected.to validate_uniqueness_of(:preserved_object_id).scoped_to(:moab_storage_root_id) }
-  it { is_expected.to have_many(:zipped_moab_versions) }
 
   describe '#validate_checksums!' do
     it 'passes self to ChecksumValidationJob' do
       expect(ChecksumValidationJob).to receive(:perform_later).with(cm)
       cm.validate_checksums!
-    end
-  end
-
-  context 'delegation to s3_key' do
-    it 'creates the s3_key correctly' do
-      expect(cm.s3_key).to eq("ab/123/cd/4567/#{druid}.v0001.zip")
-    end
-  end
-
-  describe '#druid_version_zip' do
-    it 'creates an instance of DruidVersionZip' do
-      expect(cm.druid_version_zip).to be_an_instance_of DruidVersionZip
     end
   end
 
@@ -157,13 +143,11 @@ RSpec.describe CompleteMoab, type: :model do
           status_details: 'status now ok',
           last_moab_validation: yesterday,
           last_checksum_validation: yesterday,
-          last_version_audit: yesterday,
-          last_archive_audit: yesterday
+          last_version_audit: yesterday
         )
       )
     end
 
-    # rubocop:disable RSpec/MultipleExpectations
     it 'updates the current storage root, records the old one, and clears audit info' do
       expect(cm.from_moab_storage_root).to be_nil
       orig_storage_root = cm.moab_storage_root
@@ -178,9 +162,7 @@ RSpec.describe CompleteMoab, type: :model do
       expect(cm.last_moab_validation).to be_nil
       expect(cm.last_checksum_validation).to be_nil
       expect(cm.last_version_audit).to be_nil
-      expect(cm.last_archive_audit).to be <= now - 1.day # we didn't touch the cloud archived copies
     end
-    # rubocop:enable RSpec/MultipleExpectations
 
     it 'queues a checksum validation job' do
       allow(ChecksumValidationJob).to receive(:perform_later).with(cm)
@@ -316,32 +298,6 @@ RSpec.describe CompleteMoab, type: :model do
     end
   end
 
-  describe '.archive_check_expired' do
-    let(:archive_ttl) { preserved_object.preservation_policy.archive_ttl }
-    let!(:old_check_cm1) do
-      create(:complete_moab, args.merge(version: 6, last_archive_audit: now - (archive_ttl * 2)))
-    end
-    let!(:old_check_cm2) do
-      create(:complete_moab, args.merge(version: 7, last_archive_audit: now - archive_ttl - 1.second))
-    end
-    let!(:recently_checked_cm1) do
-      create(:complete_moab, args.merge(version: 8, last_archive_audit: now - archive_ttl + 1.second))
-    end
-    let!(:recently_checked_cm2) do
-      create(:complete_moab, args.merge(version: 9, last_archive_audit: now - (archive_ttl * 0.1)))
-    end
-
-    describe '.archive_check_expired' do
-      it 'returns PreservedCopies that need fixity check' do
-        expect(described_class.archive_check_expired.to_a.sort).to eq [cm, old_check_cm1, old_check_cm2]
-      end
-
-      it 'returns no PreservedCopies with timestamps indicating still-valid fixity check' do
-        expect(described_class.archive_check_expired).not_to include(recently_checked_cm1, recently_checked_cm2)
-      end
-    end
-  end
-
   context 'with a persisted object' do
     describe '.by_druid' do
       it 'returns the expected complete moabs' do
@@ -355,58 +311,6 @@ RSpec.describe CompleteMoab, type: :model do
         expect(described_class.by_druid(druid).by_storage_root(cm.moab_storage_root).length).to eq 1
         expect(described_class.by_druid(druid).by_storage_root(MoabStorageRoot.first)).to be_empty
       end
-    end
-  end
-
-  describe '#create_zipped_moab_versions!' do
-    let(:cm_version) { 3 }
-    let(:zmvs_by_druid) { ZippedMoabVersion.by_druid(druid) }
-    let!(:zip_ep) { cm.zipped_moab_versions.first.zip_endpoint } # snag the ZE before link deleted
-    let!(:zip_ep2) { cm.zipped_moab_versions.second.zip_endpoint }
-
-    before { cm.zipped_moab_versions.destroy_all } # undo auto-spawned rows from callback
-
-    it "creates ZMVs that don't yet exist for expected versions, but should" do
-      expect { cm.create_zipped_moab_versions! }.to change {
-        ZipEndpoint.which_need_archive_copy(druid, cm_version).to_a.to_set
-      }.from([zip_ep, zip_ep2].to_set).to([].to_set).and change {
-        zmvs_by_druid.where(version: cm_version).count
-      }.from(0).to(2)
-
-      expect(zmvs_by_druid.pluck(:version).sort).to eq [1, 1, 2, 2, 3, 3]
-    end
-
-    it "creates ZMVs that don't yet exist for new endpoint, but should" do
-      expect { cm.create_zipped_moab_versions! }.to change {
-        ZipEndpoint.which_need_archive_copy(druid, cm_version).to_a.to_set
-      }.from([zip_ep, zip_ep2].to_set).to([].to_set).and change {
-        zmvs_by_druid.where(version: cm_version).count
-      }.from(0).to(2)
-
-      new_zip_ep = create(:zip_endpoint)
-
-      expect { cm.create_zipped_moab_versions! }.to change {
-        ZipEndpoint.which_need_archive_copy(druid, cm_version).to_a
-      }.from([new_zip_ep]).to([]).and change {
-        zmvs_by_druid.where(version: cm_version).count
-      }.from(2).to(3)
-    end
-
-    it 'creates all versions for ZMV' do
-      expect(cm.version).to eq 3
-      expect { cm.create_zipped_moab_versions! }.to change(ZippedMoabVersion, :count).from(0).to(6)
-    end
-
-    it 'if ZMVs already exist, return an empty array' do
-      cm.create_zipped_moab_versions!
-      expect(cm.create_zipped_moab_versions!).to eq []
-    end
-  end
-
-  describe '#audit_moab_version_replication!' do
-    it 'queues a replication audit job for its CompleteMoab' do
-      expect(MoabReplicationAuditJob).to receive(:perform_later).with(cm)
-      cm.audit_moab_version_replication!
     end
   end
 

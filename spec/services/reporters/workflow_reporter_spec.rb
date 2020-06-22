@@ -34,7 +34,7 @@ RSpec.describe Reporters::WorkflowReporter do
       end
 
       it 'updates workflow for each error' do
-        subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result1, result2])
+        subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result1, result2])
         error_msg1 = 'FooCheck (actual location: fixture_sr1; actual version: 6) || Invalid Moab, validation errors: ' \
           "[Version directory name not in 'v00xx' format: original-v1]"
         expect(client).to have_received(:update_error_status).with(druid: "druid:#{druid}",
@@ -55,7 +55,7 @@ RSpec.describe Reporters::WorkflowReporter do
       let(:result2) { { AuditResults::UNEXPECTED_VERSION => 'actual version (6) has unexpected relationship to db version' } }
 
       it 'merges errors and updates workflow' do
-        subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result1, result2])
+        subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result1, result2])
         error_msg = 'FooCheck (actual location: fixture_sr1; actual version: 6) does not match PreservedObject current_version ' \
           '&& actual version (6) has unexpected relationship to db version'
         expect(client).to have_received(:update_error_status).with(druid: "druid:#{druid}",
@@ -78,7 +78,7 @@ RSpec.describe Reporters::WorkflowReporter do
       end
 
       it 'creates the workflow and retries' do
-        subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result])
+        subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result])
         error_msg = 'FooCheck (actual location: fixture_sr1; actual version: 6) does not match PreservedObject current_version'
         expect(client).to have_received(:update_error_status).with(druid: "druid:#{druid}",
                                                                    workflow: 'preservationAuditWF',
@@ -92,7 +92,7 @@ RSpec.describe Reporters::WorkflowReporter do
       let(:result) { { AuditResults::ZIP_PARTS_NOT_CREATED => 'no zip_parts exist yet for this ZippedMoabVersion' } }
 
       it 'does not update workflow' do
-        subject.report_errors(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, results: [result])
+        subject.report_errors(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, results: [result])
         expect(client).not_to have_received(:update_error_status)
       end
     end
@@ -102,7 +102,7 @@ RSpec.describe Reporters::WorkflowReporter do
     let(:result) { { AuditResults::CM_STATUS_CHANGED => 'CompleteMoab status changed from invalid_moab' } }
 
     it 'updates workflow' do
-      subject.report_completed(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, result: result)
+      subject.report_completed(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, result: result)
 
       expect(client).to have_received(:update_status).with(druid: "druid:#{druid}",
                                                            workflow: 'preservationAuditWF',
@@ -125,7 +125,7 @@ RSpec.describe Reporters::WorkflowReporter do
       end
 
       it 'creates the workflow and retries' do
-        subject.report_completed(druid: druid, version: actual_version, moab_storage_root: ms_root, check_name: check_name, result: result)
+        subject.report_completed(druid: druid, version: actual_version, storage_area: ms_root, check_name: check_name, result: result)
 
         expect(client).to have_received(:update_status).with(druid: "druid:#{druid}",
                                                              workflow: 'preservationAuditWF',

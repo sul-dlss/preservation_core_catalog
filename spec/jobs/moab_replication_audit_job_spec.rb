@@ -3,60 +3,58 @@
 require 'rails_helper'
 
 describe MoabReplicationAuditJob, type: :job do
-  let(:cm) { create(:complete_moab, version: 2) }
-  let(:job) { described_class.new(cm) }
+  let(:preserved_object) { create(:preserved_object, current_version: 2) }
+  let(:job) { described_class.new(preserved_object) }
   let(:logger) { instance_double(Logger) }
 
   before do
     allow(Audit::CatalogToArchive).to receive(:logger).and_return(logger)
     allow(Settings.replication).to receive(:audit_should_backfill).and_return(true) # enable for tests
+    # creation of complete moab triggers archive zip creation, as archive zips are created from moabs
+    create(:complete_moab, preserved_object: preserved_object, version: preserved_object.current_version)
   end
 
-  describe '#backfill_missing_zmvs' do
-    it 'when backfilling is disabled, does nothing' do
-      allow(Settings.replication).to receive(:audit_should_backfill).and_return(false)
-      expect(cm).not_to receive(:create_zipped_moab_versions!)
-      job.send(:backfill_missing_zmvs, cm)
-    end
-
+  describe '#perform' do
     context 'when there are no zipped moab versions to backfill' do
       it 'does not log a warning' do
         expect(logger).not_to receive(:warn)
-        job.send(:backfill_missing_zmvs, cm)
+        expect { job.perform(preserved_object) }.not_to change(ZippedMoabVersion, :count)
       end
     end
 
     context 'when there are zipped_moab_versions to backfill' do
-      before { cm.zipped_moab_versions.destroy_all } # undo auto-spawned rows from callback
+      before { preserved_object.zipped_moab_versions.destroy_all } # undo auto-spawned rows from callback
+
+      it 'does nothing when backfilling is disabled' do
+        allow(Settings.replication).to receive(:audit_should_backfill).and_return(false)
+        expect(preserved_object).not_to receive(:create_zipped_moab_versions!)
+        expect { job.perform(preserved_object) }.not_to change(ZippedMoabVersion, :count)
+      end
 
       it 'creates missing ZMVs and logs a warning' do
-        expect(cm).to receive(:create_zipped_moab_versions!).and_call_original
+        expect(preserved_object).to receive(:create_zipped_moab_versions!).and_call_original
         expect(logger).to receive(:warn)
           .with(/backfilled 4 ZippedMoabVersions: 1 to aws_s3_west_2; 1 to ibm_us_south; 2 to aws_s3_west_2; 2 to ibm_us_south/)
-        job.send(:backfill_missing_zmvs, cm)
+        job.perform(preserved_object)
       end
-    end
-  end
-
-  describe '#perform' do
-    it 'calls backfill_missing_zmvs' do
-      expect(job).to receive(:backfill_missing_zmvs)
-      job.perform(cm)
     end
 
     it 'updates last_archive_audit timestamp' do
-      expect(cm).to receive(:update).with(last_archive_audit: Time)
-      job.perform(cm)
+      expect { job.perform(preserved_object) }.to change { preserved_object.reload.last_archive_audit }
     end
 
     it 'calls PartReplicationAuditJob once per related endpoint' do
-      new_endpoint = create(:zip_endpoint) # before `cm` invoked, means default policy will include it when making cm
-      # make sure our new_endpoint is included, even though the association isn't the audit's responsibility
-      expect(cm.zipped_moab_versions.pluck(:zip_endpoint_id)).to include(new_endpoint.id)
-      ZipEndpoint.includes(:zipped_moab_versions).where(zipped_moab_versions: { complete_moab: cm }).each do |endpoint|
-        expect(PartReplicationAuditJob).to receive(:perform_later).with(cm, endpoint)
+      new_target_endpoint = create(:zip_endpoint)
+      new_nontarget_endpoint = create(:zip_endpoint,
+                                      preservation_policies: [create(:preservation_policy, preservation_policy_name: 'giant_datasets_policy')])
+      preserved_object.create_zipped_moab_versions! # backfill to the new target endpoint, should omit the other non-default policy endpoint
+
+      expect(preserved_object.zipped_moab_versions.pluck(:zip_endpoint_id).uniq).to include(new_target_endpoint.id)
+      PreservationPolicy.default_policy.zip_endpoints.each do |endpoint|
+        expect(PartReplicationAuditJob).to receive(:perform_later).with(preserved_object, endpoint)
       end
-      job.perform(cm)
+      expect(PartReplicationAuditJob).not_to receive(:perform_later).with(preserved_object, new_nontarget_endpoint)
+      job.perform(preserved_object)
     end
   end
 end
