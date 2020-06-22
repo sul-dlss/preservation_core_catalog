@@ -171,21 +171,17 @@ RSpec.describe PreservedObject, type: :model do
       preserved_object.create_zipped_moab_versions!
       expect(preserved_object.create_zipped_moab_versions!).to eq []
     end
-  end
 
-  describe '#replicate!' do
-    let!(:preserved_object) { create(:preserved_object, druid: druid, current_version: 3) }
+    context 'no moabs are both up to date and ok' do
+      let(:cm1) do
+        create(:complete_moab, preserved_object: preserved_object, version: current_version, status: 'invalid_checksum', moab_storage_root: msr1)
+      end
 
-    it 'if PreservedObject does not have a replicatable moab, returns false, does not enqueue' do
-      expect(preserved_object).to receive(:moab_replication_storage_location).and_return(nil)
-      expect(ZipmakerJob).not_to receive(:perform_later)
-      expect(preserved_object.send(:replicate!, 1)).to be(nil)
-    end
-
-    it 'if PreservedObject is replicatable, passes druid and version to Zipmaker' do
-      expect(preserved_object).to receive(:moab_replication_storage_location).and_return('/storage_root/bc123df4567')
-      expect(ZipmakerJob).to receive(:perform_later).with(preserved_object.druid, 2, '/storage_root/bc123df4567')
-      preserved_object.send(:replicate!, 2)
+      it 'returns nil and does not attempt to replicate' do
+        expect(ZipEndpoint).not_to receive(:which_need_archive_copy)
+        expect(ZipmakerJob).not_to receive(:perform_later)
+        expect(preserved_object.create_zipped_moab_versions!).to eq nil
+      end
     end
   end
 
