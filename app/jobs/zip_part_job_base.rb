@@ -2,10 +2,11 @@
 
 # A common base for jobs based around druid and version (with locking).
 # Prepopulates the `zip` with a DruidVersionZip object
-class ZipPartJobBase < DruidVersionJobBase
-  attr_accessor :dvz_part
+class ZipPartJobBase < ApplicationJob
+  attr_accessor :dvz_part, :zip
 
   before_perform do |job|
+    job.zip = DruidVersionZip.new(job.arguments.first, job.arguments.second)
     job.dvz_part = DruidVersionZipPart.new(zip, job.arguments.third)
   end
 
