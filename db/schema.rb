@@ -26,12 +26,10 @@ ActiveRecord::Schema.define(version: 2020_06_24_144318) do
     t.bigint "size"
     t.integer "status", null: false
     t.datetime "last_version_audit"
-    t.datetime "last_archive_audit"
     t.string "status_details"
     t.bigint "from_moab_storage_root_id"
     t.index ["created_at"], name: "index_complete_moabs_on_created_at"
     t.index ["from_moab_storage_root_id"], name: "index_complete_moabs_on_from_moab_storage_root_id"
-    t.index ["last_archive_audit"], name: "index_complete_moabs_on_last_archive_audit"
     t.index ["last_checksum_validation"], name: "index_complete_moabs_on_last_checksum_validation"
     t.index ["last_moab_validation"], name: "index_complete_moabs_on_last_moab_validation"
     t.index ["last_version_audit"], name: "index_complete_moabs_on_last_version_audit"
@@ -79,8 +77,10 @@ ActiveRecord::Schema.define(version: 2020_06_24_144318) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "preservation_policy_id", null: false
+    t.datetime "last_archive_audit"
     t.index ["created_at"], name: "index_preserved_objects_on_created_at"
     t.index ["druid"], name: "index_preserved_objects_on_druid", unique: true
+    t.index ["last_archive_audit"], name: "index_preserved_objects_on_last_archive_audit"
     t.index ["preservation_policy_id"], name: "index_preserved_objects_on_preservation_policy_id"
     t.index ["updated_at"], name: "index_preserved_objects_on_updated_at"
   end
@@ -122,11 +122,11 @@ ActiveRecord::Schema.define(version: 2020_06_24_144318) do
 
   create_table "zipped_moab_versions", force: :cascade do |t|
     t.integer "version", null: false
-    t.bigint "complete_moab_id", null: false
     t.bigint "zip_endpoint_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["complete_moab_id"], name: "index_zipped_moab_versions_on_complete_moab_id"
+    t.bigint "preserved_object_id", null: false
+    t.index ["preserved_object_id"], name: "index_zipped_moab_versions_on_preserved_object_id"
     t.index ["zip_endpoint_id"], name: "index_zipped_moab_versions_on_zip_endpoint_id"
   end
 
@@ -141,6 +141,6 @@ ActiveRecord::Schema.define(version: 2020_06_24_144318) do
   add_foreign_key "preserved_objects_primary_moabs", "complete_moabs"
   add_foreign_key "preserved_objects_primary_moabs", "preserved_objects"
   add_foreign_key "zip_parts", "zipped_moab_versions"
-  add_foreign_key "zipped_moab_versions", "complete_moabs"
+  add_foreign_key "zipped_moab_versions", "preserved_objects"
   add_foreign_key "zipped_moab_versions", "zip_endpoints"
 end
