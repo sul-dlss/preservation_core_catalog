@@ -82,6 +82,9 @@ Style/BlockDelimiters:
   Exclude:
     - 'spec/*/*' # rspec expect statements look ugly with do-end instead of {}
 
+Style/RedundantFetchBlock:
+  Enabled: true
+
 Style/SymbolArray:
   Exclude:
     - 'Rakefile' # because [:spec, :rubocop] isn't a big deal
