@@ -53,6 +53,23 @@ RSpec.describe CompleteMoabHandler do
       expect(results).to include(a_hash_including(code => a_string_matching('CompleteMoab db object already exists')))
     end
 
+    context 'a moab (for the same druid) on a different storage root already exists' do
+      before do
+        po = create(:preserved_object, druid: druid)
+        other_storage_root = create(:moab_storage_root)
+        create(:complete_moab, preserved_object: po, moab_storage_root: other_storage_root)
+      end
+
+      it 'creates the new CompleteMoab in database' do
+        complete_moab_handler.create
+        existing_po = PreservedObject.find_by(druid: druid)
+        new_cm = existing_po.complete_moabs.find_by(moab_storage_root: ms_root)
+        expect(existing_po.current_version).to eq incoming_version
+        expect(new_cm.version).to eq incoming_version
+        expect(new_cm.size).to eq incoming_size
+      end
+    end
+
     it_behaves_like 'calls AuditResults.report_results', :create
 
     context 'db update error' do
