@@ -80,7 +80,7 @@ class MoabValidator
       )
     end
 
-    complete_moab.status_details = results.results_as_string(results.result_array)
+    complete_moab.status_details = results.results_as_string
   end
 
   def mark_moab_not_found
