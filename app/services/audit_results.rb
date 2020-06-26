@@ -132,8 +132,8 @@ class AuditResults
     /to ok$/.match(result[AuditResults::CM_STATUS_CHANGED]) != nil
   end
 
-  def results_as_string(error_results)
-    "#{string_prefix} #{error_results.map(&:values).flatten.join(' && ')}"
+  def results_as_string
+    "#{string_prefix} #{result_array.map(&:values).flatten.join(' && ')}"
   end
 
   def to_json(*_args)
