@@ -80,4 +80,44 @@ namespace :prescat do
       MoabStorageRoot.find_by!(name: args[:storage_root_name]).complete_moabs.find_each(&:validate_checksums!)
     end
   end
+
+  namespace :druid do
+    desc "verify zip parts on cloud storage roots"
+    task :parts, [:druid, :version] => [:environment] do |_task, args|
+      druid = args[:druid]
+      versions(druid)
+      version = args[:version]
+      cm = CompleteMoab.by_druid(druid).first
+      next if cm.nil?
+
+      MoabReplicationAuditJob.perform_now(cm)
+      cm.reload
+      # ZipPart.joins(zipped_moab_version: [{ complete_moab: [:preserved_object] }, :zip_endpoint]).where(preserved_objects: { druid: druid }).pluck(:druid, 'current_version AS highest_version', 'zipped_moab_versions.version AS zip_version', :endpoint_name, :status, :suffix, :parts_count, :size)
+      %w(aws_s3_east_1 aws_s3_west_2).each do |endpoint|
+        rel = cloud_rel_for(cm, endpoint)
+        cm.zipped_moab_versions.each do |zmv|
+          zmv_version = rel.find_by(version: zmv.version)
+          # TODO: Make this audit dynamic per provider (aws, ibm)
+          audit = PreservationCatalog::S3::Audit.new(zmv_version, AuditResults.new(druid, zmv.version, cm.moab_storage_root, 'manual_cloud_archive_audit'))
+          audit.send(:bucket)
+          zparts_objects = zmv_version.zip_parts.map { |part| aws_audit.send(:bucket).object(part.s3_key) }
+          zparts_objects.each { |zpart| puts "Key = #{zpart.key} Found = #{zpart.exists?}" }
+        end
+      end
+
+      rel = cloud_rel_for(cm, 'ibm_us_south')
+      cm.zipped_moab_versions.each do |zmv|
+        zmv_version = rel.find_by(version: zmv.version)
+        # TODO: Make this audit dynamic per provider (aws, ibm)
+        audit = PreservationCatalog::Ibm::Audit.new(zmv_version, AuditResults.new(druid, zmv.version, cm.moab_storage_root, 'manual_cloud_archive_audit'))
+        audit.send(:bucket)
+        zparts_objects = zmv_version.zip_parts.map { |part| aws_audit.send(:bucket).object(part.s3_key) }
+        zparts_objects.each { |zpart| puts "Key = #{zpart.key} Found = #{zpart.exists?}" }
+      end
+    end
+  end
+end
+
+def cloud_rel_for(complete_moab, endpoint) do
+  cm.zipped_moab_versions.where(zip_endpoint: ZipEndpoint.where(endpoint_name: endpoint))
 end
