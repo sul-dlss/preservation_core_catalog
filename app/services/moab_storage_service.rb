@@ -27,7 +27,23 @@ class MoabStorageService
     raise(ArgumentError, "No filename provided to MoabStorageService.filepath for druid #{druid}") if filename.blank?
     err_msg = "category arg must be 'content', 'metadata', or 'manifest' (MoabStorageService.filepath for druid #{druid})"
     raise(ArgumentError, err_msg) unless ['content', 'metadata', 'manifest'].include?(category)
-    Stanford::StorageServices.retrieve_file(category, filename, druid, version)
+
+    # DSA's SdrIngestService.transfer hits a pres cat endpoint that ultimately calls this method to get signatureCatalog (via pres client).  needs to
+    # get primary.
+    # relevant links:
+    #  https://github.com/sul-dlss/preservation_robots/pull/244/files#diff-d6e54954863f787ff05c8112b773735dR49
+    #  https://github.com/sul-dlss/dor-services-app/blob/7e94da22e7fa9e09af6fe88bd76085d7471f3548/app/services/sdr_ingest_service.rb#L13
+    #  https://github.com/sul-dlss/preservation-client/blob/ed07535fc8c0c4c9e325a48de792d85bd6d1779c/lib/preservation/client/objects.rb#L86
+    #  https://github.com/sul-dlss/moab-versioning/blob/9e24a35624b0c54c94a0386e1de7cbf52cf5b0d3/lib/moab/storage_repository.rb#L149
+    #  https://github.com/sul-dlss/moab-versioning/blob/9e24a35624b0c54c94a0386e1de7cbf52cf5b0d3/lib/moab/storage_services.rb#L111
+    # previously for this we called the Stanford::StorageServices.retrieve_file(category, filename, druid, version)
+    # convenience method, but it doesn't account for the possibility of multiple moabs.  so we'll get the specific moab
+    # we want from the primary moab location, and we'll do the rest of what Stanford::StorageServices.retrieve_file does to return a path
+    primary_moab_location = CompleteMoab.primary_moab_location(druid)
+    primary_storage_object = Stanford::StorageServices.search_storage_objects(druid).find do |moab|
+      moab.object_pathname.to_s.start_with?(primary_moab_location)
+    end
+    primary_storage_object.find_object_version(version).find_filepath(category, filename)
   end
 
   def self.retrieve_content_file_group(druid)

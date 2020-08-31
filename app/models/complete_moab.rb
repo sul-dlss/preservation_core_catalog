@@ -115,6 +115,15 @@ class CompleteMoab < ApplicationRecord
     self
   end
 
+  # @param [String] druid for which to get the location of the primary moab copy
+  # @return [String] storage_location (including storage trunk) for the primary copy of the moab for given druid
+  def self.primary_moab_location(druid)
+    # we've added DB integrity constraints such that there should be at most one primary moab for a given druid.
+    # we expect there to be exactly one per druid, but that's not enforced at the schema level, so use take! to fail
+    # quickly and descriptively
+    by_druid(druid).joins(:moab_storage_root, :preserved_objects_primary_moab).select(:storage_location).take!.storage_location
+  end
+
   def self.normalize_date(timestamp)
     return timestamp if timestamp.is_a?(Time) || timestamp.is_a?(ActiveSupport::TimeWithZone)
     Time.parse(timestamp).utc
