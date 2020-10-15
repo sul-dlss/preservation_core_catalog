@@ -5,6 +5,12 @@ require 'rails_helper'
 RSpec.describe ObjectsController, type: :request do
   let(:prefixed_druid) { 'druid:bj102hs9687' }
   let(:bare_druid) { 'bj102hs9687' }
+  let(:logger_double) { instance_double(Logger, info: nil, error: nil, add: nil) }
+
+  before do
+    allow(Audit::MoabToCatalog).to receive(:logger).and_return(logger_double)
+    Audit::MoabToCatalog.check_existence_for_druid(bare_druid)
+  end
 
   describe 'GET #file' do
     context 'when object exists' do
@@ -72,7 +78,7 @@ RSpec.describe ObjectsController, type: :request do
       it 'returns 404 response code with "No storage object found"' do
         get file_object_url(id: 'druid:xx123yy9999'), params: { category: 'manifest', filepath: 'manifestInventory.xml' }, headers: valid_auth_header
         expect(response).to have_http_status(:not_found)
-        expect(response.body).to eq '404 Not Found: No storage object found for xx123yy9999'
+        expect(response.body).to eq "404 Not Found: Couldn't find CompleteMoab with [WHERE \"preserved_objects\".\"druid\" = $1]"
       end
     end
 
