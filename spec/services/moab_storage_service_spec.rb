@@ -128,34 +128,29 @@ RSpec.describe MoabStorageService do
   end
 
   describe '.filepath' do
-    let(:category) { '' }
-    let(:fname) { 'foo' }
-    let(:version) { nil }
-    let(:file_path) { 'my/file/path.txt' }
+    let(:logger_double) { instance_double(Logger, info: nil, error: nil, add: nil) }
 
-    it 'calls Stanford::StorageServices.retrieve_file' do
-      allow(Stanford::StorageServices).to receive(:retrieve_file).with('content', fname, druid, version).and_return(file_path)
-      expect(described_class.filepath(druid, 'content', fname)).to eq file_path
-      expect(Stanford::StorageServices).to have_received(:retrieve_file).with('content', fname, druid, version)
+    before do
+      allow(Audit::MoabToCatalog).to receive(:logger).and_return(logger_double)
+      Audit::MoabToCatalog.check_existence_for_druid(druid)
     end
 
     context 'when file is not in Moab' do
       it 'passes along error raised by moab-versioning gem' do
-        emsg = 'my error'
-        allow(Stanford::StorageServices).to receive(:retrieve_file).with('content', 'foobar', druid, version).and_raise(Moab::MoabRuntimeError, emsg)
-        expect { described_class.filepath(druid, 'content', 'foobar') }.to raise_error(Moab::MoabRuntimeError, emsg)
+        emsg = 'content file foobar not found for druid:jj925bx9565 - 2'
+        expect { described_class.filepath(druid, 'content', 'foobar') }.to raise_error(Moab::FileNotFoundException, emsg)
       end
     end
 
     describe 'category param:' do
       let(:err_msg) { "category arg must be 'content', 'metadata', or 'manifest' (MoabStorageService.filepath for druid jj925bx9565)" }
 
-      before do
-        allow(Stanford::StorageServices).to receive(:retrieve_file).with(category, fname, druid, version).and_return(file_path)
-      end
-
       context 'when manifest' do
         let(:category) { 'manifest' }
+        let(:fname) { 'versionAdditions.xml' }
+        let(:file_path) do
+          Pathname.new('spec/fixtures/storage_root01/sdr2objects/jj/925/bx/9565/jj925bx9565/v0002/manifests/versionAdditions.xml')
+        end
 
         it 'returns the requested filepath' do
           expect(described_class.filepath(druid, category, fname)).to eq file_path
@@ -164,6 +159,11 @@ RSpec.describe MoabStorageService do
 
       context 'when metadata' do
         let(:category) { 'metadata' }
+        let(:fname) { 'identityMetadata.xml' }
+        let(:file_path) do
+          # NOTE: this file was not modified in v2, so we get the path to v1's copy
+          Pathname.new('spec/fixtures/storage_root01/sdr2objects/jj/925/bx/9565/jj925bx9565/v0001/data/metadata/identityMetadata.xml')
+        end
 
         it 'returns the requested filepath' do
           expect(described_class.filepath(druid, category, fname)).to eq file_path
@@ -172,7 +172,15 @@ RSpec.describe MoabStorageService do
 
       context 'when content' do
         let(:category) { 'content' }
+        let(:fname) { 'PC0170_s3_4th_of_July_2010-07-04_095432_0003.jpg' }
+        let(:file_path) do
+          # NOTE: this file was not modified in v2, so we get the path to v1's copy
+          Pathname.new(
+            'spec/fixtures/storage_root01/sdr2objects/jj/925/bx/9565/jj925bx9565/v0001/data/content/PC0170_s3_4th_of_July_2010-07-04_095432_0003.jpg'
+          )
+        end
 
+        # TODO: still fails even after adding druid to catalog
         it 'returns the requested filepath' do
           expect(described_class.filepath(druid, category, fname)).to eq file_path
         end
@@ -182,22 +190,18 @@ RSpec.describe MoabStorageService do
         let(:category) { 'unrecognized' }
 
         it 'raises ArgumentError' do
-          expect { described_class.filepath(druid, category, fname) }.to raise_error(ArgumentError, err_msg)
+          expect { described_class.filepath(druid, category, 'foo') }.to raise_error(ArgumentError, err_msg)
         end
       end
 
       context 'when missing' do
         it 'raises ArgumentError' do
-          expect { described_class.filepath(druid, nil, fname) }.to raise_error(ArgumentError, err_msg)
+          expect { described_class.filepath(druid, nil, 'filename') }.to raise_error(ArgumentError, err_msg)
         end
       end
     end
 
     describe 'filename param' do
-      before do
-        allow(Stanford::StorageServices).to receive(:retrieve_file).with(category, fname, druid, version).and_return(file_path)
-      end
-
       context 'when missing' do
         let(:err_msg) { 'No filename provided to MoabStorageService.filepath for druid jj925bx9565' }
 
@@ -208,10 +212,6 @@ RSpec.describe MoabStorageService do
     end
 
     describe 'version param' do
-      let(:exp_pathname) do
-        Pathname.new('spec/fixtures/storage_root01/sdr2objects/jj/925/bx/9565/jj925bx9565/v0002/manifests/manifestInventory.xml')
-      end
-
       context 'when specified correctly' do
         let(:exp_pathname) do
           Pathname.new('spec/fixtures/storage_root01/sdr2objects/jj/925/bx/9565/jj925bx9565/v0001/manifests/manifestInventory.xml')
@@ -225,18 +225,22 @@ RSpec.describe MoabStorageService do
       context 'when not a positive integer value' do
         it 'raises Moab::MoabRuntimeError' do
           err_msg = 'Version ID v3 does not exist'
-          expect { described_class.filepath(druid, 'metadata', fname, 'v3') }.to raise_error(Moab::MoabRuntimeError, err_msg)
+          expect { described_class.filepath(druid, 'metadata', 'identityMetadata.xml', 'v3') }.to raise_error(Moab::MoabRuntimeError, err_msg)
         end
       end
 
       context 'when too high a version' do
         it 'raises Moab::MoabRuntimeError' do
           err_msg = 'Version ID 666 does not exist'
-          expect { described_class.filepath(druid, 'metadata', fname, 666) }.to raise_error(Moab::MoabRuntimeError, err_msg)
+          expect { described_class.filepath(druid, 'metadata', 'identityMetadata.xml', 666) }.to raise_error(Moab::MoabRuntimeError, err_msg)
         end
       end
 
       context 'when missing' do
+        let(:exp_pathname) do
+          Pathname.new('spec/fixtures/storage_root01/sdr2objects/jj/925/bx/9565/jj925bx9565/v0002/manifests/manifestInventory.xml')
+        end
+
         it 'returns the most recent version' do
           expect(described_class.filepath(druid, 'manifest', 'manifestInventory.xml')).to eq exp_pathname
         end
