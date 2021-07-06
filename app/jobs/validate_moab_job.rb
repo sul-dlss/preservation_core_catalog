@@ -32,6 +32,7 @@ class ValidateMoabJob < ApplicationJob
   # rubocop:disable Metrics/AbcSize
   def validate
     errors = []
+    # TODO: need to fix to not assume 1 moab per druid (use primary if multiple? have caller pass storage location?)
     structural_validator = Stanford::StorageObjectValidator.new(moab)
     structural_errors = structural_validator.validation_errors # Returns an array of hashes with error codes => messages
     errors << structural_errors unless structural_errors.empty?
